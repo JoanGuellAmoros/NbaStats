@@ -11,6 +11,7 @@ import {
 import type {
   CacheEntry,
   CacheSummary,
+  Game,
   Settings,
   StorageInfo,
 } from "./types";
@@ -25,6 +26,7 @@ export const KEY = {
   leaders: (category: string) => `snapshot:leaders:${category}`,
   team: (id: string) => `snapshot:team:${id}`,
   player: (id: string) => `snapshot:player:${id}`,
+  game: (id: string) => `snapshot:game:${id}`,
   lastSync: "meta:lastSync",
   settings: "meta:settings",
 } as const;
@@ -111,6 +113,7 @@ export async function cacheSummary(): Promise<CacheSummary> {
     leaders: 0,
     teams: 0,
     players: 0,
+    games: 0,
   };
 
   for (const key of allKeys) {
@@ -119,10 +122,36 @@ export async function cacheSummary(): Promise<CacheSummary> {
     else if (key.startsWith("snapshot:leaders:")) summary.leaders += 1;
     else if (key.startsWith("snapshot:team:")) summary.teams += 1;
     else if (key.startsWith("snapshot:player:")) summary.players += 1;
+    else if (key.startsWith("snapshot:game:")) summary.games += 1;
     if (key.startsWith("snapshot:")) summary.total += 1;
   }
 
   return summary;
+}
+
+type CachedGameSource = {
+  games?: Game[];
+  schedule?: Game[];
+};
+
+export async function findCachedGame(gameId: string): Promise<Game | undefined> {
+  const allKeys = await listKeys();
+  const sources = allKeys.filter(
+    (key) =>
+      key.startsWith("snapshot:scoreboard:") ||
+      key.startsWith("snapshot:team:"),
+  );
+
+  for (const key of sources) {
+    const entry = await readEntry<CachedGameSource>(key);
+    if (!entry) continue;
+
+    const games = entry.data.games ?? entry.data.schedule ?? [];
+    const match = games.find((game) => game.id === gameId);
+    if (match) return match;
+  }
+
+  return undefined;
 }
 
 export async function getStorageInfo(): Promise<StorageInfo> {

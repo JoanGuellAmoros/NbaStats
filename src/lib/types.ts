@@ -44,6 +44,7 @@ export type GameSide = {
   score?: string;
   winner?: boolean;
   record?: string;
+  linescores?: string[];
 };
 
 export type Game = {
@@ -66,6 +67,82 @@ export type GameDay = {
   date: string;
   season?: string;
   games: Game[];
+};
+
+export type GameStat = {
+  name: string;
+  label: string;
+  value: string;
+  abbreviation?: string;
+};
+
+export type GameTeamStats = {
+  team: Team;
+  homeAway: "home" | "away";
+  stats: GameStat[];
+};
+
+export type GameLeaderPlayer = {
+  id: string;
+  name: string;
+  headshot?: string;
+  jersey?: string;
+  position?: string;
+  value: string;
+};
+
+export type GameLeaderCategory = {
+  key: string;
+  label: string;
+  players: GameLeaderPlayer[];
+};
+
+export type GameTeamLeaders = {
+  team: Team;
+  categories: GameLeaderCategory[];
+};
+
+export type GameBoxColumn = {
+  key: string;
+  label: string;
+};
+
+export type GameBoxPlayer = {
+  id: string;
+  name: string;
+  shortName?: string;
+  jersey?: string;
+  position?: string;
+  headshot?: string;
+  starter: boolean;
+  didNotPlay: boolean;
+  reason?: string;
+  stats: Record<string, string>;
+};
+
+export type GameBoxTeam = {
+  team: Team;
+  homeAway: "home" | "away";
+  columns: GameBoxColumn[];
+  players: GameBoxPlayer[];
+  totals?: Record<string, string>;
+};
+
+export type GameOfficial = {
+  name: string;
+  role?: string;
+};
+
+export type GameDetail = {
+  game: Game;
+  season?: string;
+  venue?: string;
+  venueCity?: string;
+  attendance?: number;
+  officials: GameOfficial[];
+  teamStats: GameTeamStats[];
+  leaders: GameTeamLeaders[];
+  boxscore: GameBoxTeam[];
 };
 
 export type LeaderPlayer = {
@@ -194,6 +271,7 @@ export type CacheSummary = {
   leaders: number;
   teams: number;
   players: number;
+  games: number;
 };
 
 export type StorageInfo = {

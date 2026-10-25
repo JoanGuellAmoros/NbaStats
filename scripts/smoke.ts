@@ -1,4 +1,5 @@
 import {
+  fetchGameDetail,
   fetchLeaders,
   fetchPlayerDetail,
   fetchScoreboard,
@@ -54,6 +55,40 @@ async function main() {
       assert(game.away.team.id && game.home.team.id, "equips del partit");
     }
   }
+
+  const yesterday = await fetchScoreboard(shiftIsoDate(today, -1));
+  const completed = yesterday.games.find(
+    (game) => game.state === "post" && game.away.score && game.home.score,
+  );
+  const detail = await fetchGameDetail(completed?.id ?? "401909853");
+  const boxPlayers = detail.boxscore.flatMap((box) =>
+    box.players.filter((player) => !player.didNotPlay),
+  );
+  console.log("game detail:", {
+    id: detail.game.id,
+    name: detail.game.name,
+    season: detail.season,
+    venue: detail.venue,
+    city: detail.venueCity,
+    attendance: detail.attendance,
+    quarters: detail.game.away.linescores?.length,
+    teamStats: detail.teamStats.length,
+    leaders: detail.leaders.length,
+    boxTeams: detail.boxscore.length,
+    boxPlayers: boxPlayers.length,
+    officials: detail.officials.length,
+  });
+  assert(detail.game.id.length > 0, "identificador del partit");
+  assert(detail.game.away.team.id && detail.game.home.team.id, "equips del resum");
+  assert(
+    (detail.game.away.linescores?.length ?? 0) >= 4,
+    "parcials per quart del partit",
+  );
+  assert(detail.teamStats.length === 2, "estadístiques dels dos equips");
+  assert(detail.boxscore.length === 2, "box score dels dos equips");
+  assert(boxPlayers.length > 10, "jugadors amb minuts al box score");
+  assert(detail.leaders.length === 2, "líders dels dos equips");
+  assert(Boolean(detail.game.venue ?? detail.venue), "pavelló del partit");
 
   let allLeadersOk = true;
   for (const category of LEADER_CATEGORIES) {

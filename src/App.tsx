@@ -7,6 +7,7 @@ import { SyncPanel } from "@/components/SyncPanel";
 import { Toasts } from "@/components/Toasts";
 import HomePage from "@/pages/HomePage";
 import GamesPage from "@/pages/GamesPage";
+import GamePage from "@/pages/GamePage";
 import StandingsPage from "@/pages/StandingsPage";
 import TeamsPage from "@/pages/TeamsPage";
 import TeamPage from "@/pages/TeamPage";
@@ -44,6 +45,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/partits" element={<GamesPage />} />
+            <Route path="/partits/:id" element={<GamePage />} />
             <Route path="/classificacio" element={<StandingsPage />} />
             <Route path="/equips" element={<TeamsPage />} />
             <Route path="/equips/:id" element={<TeamPage />} />

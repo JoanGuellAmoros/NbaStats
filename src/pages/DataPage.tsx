@@ -153,10 +153,11 @@ export default function DataPage() {
           <DatabaseIcon className="size-5 text-zinc-500" />
         </div>
 
-        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {[
             ["Classificació", summary.standings],
             ["Dies de partits", summary.days],
+            ["Detalls de partit", summary.games],
             ["Rànquings", summary.leaders],
             ["Fitxes d'equip", summary.teams],
             ["Fitxes de jugador", summary.players],

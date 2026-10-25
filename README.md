@@ -5,6 +5,7 @@ navegador (IndexedDB) i **només s'actualitzen quan tu prems el botó**. No hi h
 cap petició automàtica en obrir l'app, navegar-hi ni tornar a la finestra.
 
 - Partits i calendari diari
+- Detall de cada partit: parcials, estadístiques, líders i box score
 - Classificació per conferències
 - Equips amb plantilla i calendari (descàrrega sota demanda)
 - Líders estadístics i fitxes de jugador (descàrrega sota demanda)
@@ -81,8 +82,13 @@ memòria, també quan hi ha connexió.
 A més, hi ha descàrregues puntuals:
 
 - Un dia concret de partits, des de *Partits*.
+- Els detalls d'un partit, des de la seva pàgina.
 - La fitxa d'un equip, des de la seva pàgina.
 - La fitxa d'un jugador, des de la seva pàgina.
+
+Els parcials per quart ja viatgen dins del marcador diari. La resta del detall
+(estadístiques d'equip, líders i box score) es descarrega a part perquè el
+calendari pugui cobrir molts dies sense fer una petició per partit.
 
 Cancel·lar una sincronització conserva les dades que ja hi havia. Si una
 petició falla, la resta continuen i els errors es mostren en un desplegable.
@@ -96,6 +102,7 @@ petició falla, la resta continuen i els errors es mostren en un desplegable.
 | `snapshot:leaders:<categoria>`  | Rànquing de líders                 |
 | `snapshot:team:<id>`            | Plantilla i calendari d'un equip   |
 | `snapshot:player:<id>`          | Biografia i estadístiques          |
+| `snapshot:game:<id>`            | Parcials, estadístiques i box score |
 | `meta:lastSync`                 | Marca de temps de l'última sync    |
 | `meta:settings`                 | Perfil de sincronització           |
 

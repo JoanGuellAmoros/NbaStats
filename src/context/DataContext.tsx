@@ -24,6 +24,7 @@ import {
 import { errorMessage, todayIso } from "@/lib/format";
 import {
   downloadDay as syncDay,
+  downloadGame as syncGame,
   downloadPlayer as syncPlayer,
   downloadTeam as syncTeam,
   runSync,
@@ -61,6 +62,7 @@ type DataContextValue = {
   downloadDay: (date: string) => Promise<boolean>;
   downloadTeam: (teamId: string) => Promise<boolean>;
   downloadPlayer: (playerId: string) => Promise<boolean>;
+  downloadGame: (gameId: string) => Promise<boolean>;
   clearAll: () => Promise<void>;
   exportBackup: () => Promise<void>;
   importBackup: (file: File) => Promise<number>;
@@ -286,6 +288,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [online, notify],
   );
 
+  const downloadGame = useCallback(
+    async (gameId: string) => {
+      if (!online) {
+        notify(
+          "Sense connexió no es poden descarregar dades noves.",
+          "error",
+        );
+        return false;
+      }
+
+      try {
+        await syncGame(gameId);
+        notify("Detalls del partit desats a la memòria.", "success");
+        return true;
+      } catch (error) {
+        notify(errorMessage(error), "error");
+        return false;
+      }
+    },
+    [online, notify],
+  );
+
   const updateSettings = useCallback(async (next: Settings) => {
     setSettings(next);
     await persistSettings(next);
@@ -364,6 +388,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       downloadDay,
       downloadTeam,
       downloadPlayer,
+      downloadGame,
       clearAll,
       exportBackup,
       importBackup,
@@ -391,6 +416,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       downloadDay,
       downloadTeam,
       downloadPlayer,
+      downloadGame,
       clearAll,
       exportBackup,
       importBackup,

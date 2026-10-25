@@ -51,6 +51,20 @@ for (const [label, route] of routes) {
   await audit(label);
 }
 
+// Game detail (sample completed game)
+await page.evaluate(() => {
+  window.location.hash = "#/partits/401909853";
+});
+await page
+  .getByRole("button", { name: /Descarrega els detalls/i })
+  .first()
+  .click();
+await page
+  .getByRole("heading", { name: "Estadístiques d'equip" })
+  .waitFor({ timeout: 60_000 });
+await page.waitForTimeout(600);
+await audit("Detall de partit");
+
 // Team detail
 await page.evaluate(() => {
   window.location.hash = "#/equips";

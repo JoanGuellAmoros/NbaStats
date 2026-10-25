@@ -1,9 +1,19 @@
 import type {
   Conference,
   Game,
+  GameBoxColumn,
+  GameBoxPlayer,
+  GameBoxTeam,
   GameDay,
+  GameDetail,
+  GameLeaderCategory,
+  GameLeaderPlayer,
+  GameOfficial,
   GameSide,
   GameState,
+  GameStat,
+  GameTeamLeaders,
+  GameTeamStats,
   LeaderCategory,
   LeaderPlayer,
   LeaderSnapshot,
@@ -204,6 +214,10 @@ function toGameSide(competitor: any, fallbackTeam?: Team): GameSide {
     records.find((entry) => entry?.type === "total")?.summary ??
     records[0]?.summary;
 
+  const linescores = asArray<any>(competitor?.linescores)
+    .map((line) => scoreText(line?.displayValue ?? line?.value))
+    .filter((line): line is string => Boolean(line));
+
   return {
     team:
       fallbackTeam && team.id === fallbackTeam.id
@@ -212,6 +226,7 @@ function toGameSide(competitor: any, fallbackTeam?: Team): GameSide {
     score: scoreText(competitor?.score),
     winner: Boolean(competitor?.winner),
     record,
+    linescores: linescores.length > 0 ? linescores : undefined,
   };
 }
 
@@ -512,4 +527,214 @@ export async function fetchPlayerDetail(
 function normalizeSeasonName(value?: string): string | undefined {
   if (!value) return undefined;
   return value.replace(/^(\d{4})-(\d{2})/, "$1–$2");
+}
+
+const GAME_LEADER_LABELS: Record<string, string> = {
+  points: "Punts",
+  assists: "Assistències",
+  rebounds: "Rebots",
+};
+
+const OFFICIAL_ROLE_LABELS: Record<string, string> = {
+  referee: "Àrbitre",
+  "crew chief": "Àrbitre principal",
+  alternate: "Suplent",
+};
+
+function toGameStat(raw: any): GameStat {
+  const name = String(raw?.name ?? "");
+  const value =
+    raw?.displayValue ??
+    (raw?.value !== null && raw?.value !== undefined ? String(raw.value) : "—");
+
+  return {
+    name,
+    label: raw?.label ?? raw?.abbreviation ?? name,
+    value: String(value),
+    abbreviation: raw?.abbreviation,
+  };
+}
+
+function toGameTeamStats(raw: any): GameTeamStats | null {
+  const team = raw?.team?.id ? toTeam(raw.team) : undefined;
+  if (!team) return null;
+
+  return {
+    team,
+    homeAway: raw?.homeAway === "away" ? "away" : "home",
+    stats: asArray<any>(raw?.statistics).map(toGameStat),
+  };
+}
+
+function toGameBoxTeam(
+  raw: any,
+  fallbackHomeAway: "home" | "away",
+): GameBoxTeam | null {
+  const team = raw?.team?.id ? toTeam(raw.team) : undefined;
+  if (!team) return null;
+
+  const statistics = asArray<any>(raw?.statistics)[0];
+  const keys = asArray<string>(statistics?.keys);
+  const labels = asArray<string>(statistics?.labels);
+  const columns: GameBoxColumn[] = keys.map((key, index) => ({
+    key,
+    label: labels[index] ?? key,
+  }));
+
+  const players: GameBoxPlayer[] = asArray<any>(statistics?.athletes)
+    .map((entry) => {
+      const athlete = entry?.athlete ?? {};
+      const values = asArray<string>(entry?.stats);
+      const playerStats: Record<string, string> = {};
+
+      keys.forEach((key, index) => {
+        playerStats[key] = values[index] ?? "—";
+      });
+
+      return {
+        id: String(athlete?.id ?? ""),
+        name: athlete?.displayName ?? athlete?.fullName ?? "Jugador",
+        shortName: athlete?.shortName,
+        jersey: athlete?.jersey,
+        position: athlete?.position?.abbreviation,
+        headshot: athlete?.headshot?.href,
+        starter: Boolean(entry?.starter),
+        didNotPlay: Boolean(entry?.didNotPlay),
+        reason: entry?.didNotPlay ? entry?.reason : undefined,
+        stats: playerStats,
+      };
+    })
+    .filter((player) => player.id || player.name !== "Jugador");
+
+  const totalValues = asArray<string>(statistics?.totals);
+  const totals =
+    totalValues.length > 0
+      ? Object.fromEntries(
+          keys.map((key, index) => [key, totalValues[index] ?? "—"]),
+        )
+      : undefined;
+
+  return {
+    team,
+    homeAway: raw?.homeAway === "away" ? "away" : fallbackHomeAway,
+    columns,
+    players,
+    totals,
+  };
+}
+
+function toGameTeamLeaders(raw: any): GameTeamLeaders | null {
+  const team = raw?.team?.id ? toTeam(raw.team) : undefined;
+  if (!team) return null;
+
+  const categories: GameLeaderCategory[] = asArray<any>(raw?.leaders)
+    .map((category) => {
+      const key = String(category?.name ?? "");
+      const players: GameLeaderPlayer[] = asArray<any>(category?.leaders)
+        .map((entry) => {
+          const athlete = entry?.athlete ?? {};
+          return {
+            id: String(athlete?.id ?? ""),
+            name: athlete?.displayName ?? athlete?.fullName ?? "Jugador",
+            headshot: athlete?.headshot?.href,
+            jersey: athlete?.jersey,
+            position: athlete?.position?.abbreviation,
+            value: String(entry?.displayValue ?? entry?.mainStat?.value ?? "—"),
+          };
+        })
+        .filter((player) => player.id || player.name !== "Jugador");
+
+      return {
+        key,
+        label:
+          GAME_LEADER_LABELS[key] ??
+          category?.displayName ??
+          category?.shortDisplayName ??
+          key,
+        players,
+      };
+    })
+    .filter((category) => category.players.length > 0);
+
+  return { team, categories };
+}
+
+function toGameOfficial(raw: any): GameOfficial {
+  const role = String(raw?.position?.displayName ?? raw?.position?.name ?? "");
+  return {
+    name: raw?.displayName ?? raw?.fullName ?? "Àrbitre",
+    role: OFFICIAL_ROLE_LABELS[role.toLowerCase()] ?? (role || undefined),
+  };
+}
+
+export async function fetchGameDetail(
+  eventId: string,
+  signal?: AbortSignal,
+): Promise<GameDetail> {
+  const data = await getJSON<any>(`${SITE}/summary?event=${eventId}`, signal);
+
+  const header = data?.header ?? {};
+  const competition = asArray<any>(header?.competitions)[0];
+  const competitors = asArray<any>(competition?.competitors);
+  const home = competitors.find((entry) => entry?.homeAway === "home");
+  const away = competitors.find((entry) => entry?.homeAway === "away");
+
+  const game = normalizeGame({
+    id: String(header?.id ?? eventId),
+    date: competition?.date,
+    name:
+      home && away
+        ? `${away?.team?.displayName} at ${home?.team?.displayName}`
+        : undefined,
+    shortName:
+      home && away
+        ? `${away?.team?.abbreviation} @ ${home?.team?.abbreviation}`
+        : undefined,
+    competitions: competition ? [competition] : [],
+  });
+
+  if (!game) {
+    throw new Error("ESPN no ha retornat el marcador d'aquest partit");
+  }
+
+  const info = data?.gameInfo ?? {};
+  const venue = info?.venue;
+  const venueCity =
+    venue?.address?.city && venue?.address?.state
+      ? `${venue.address.city}, ${venue.address.state}`
+      : venue?.address?.city;
+
+  game.venue = game.venue ?? venue?.fullName;
+
+  const teamStats = asArray<any>(data?.boxscore?.teams)
+    .map(toGameTeamStats)
+    .filter((entry): entry is GameTeamStats => Boolean(entry));
+
+  const boxscore = asArray<any>(data?.boxscore?.players)
+    .map((entry) => {
+      const teamId = String(entry?.team?.id ?? "");
+      const fallbackHomeAway =
+        teamId && teamId === game.home.team.id ? "home" : "away";
+      return toGameBoxTeam(entry, fallbackHomeAway);
+    })
+    .filter((entry): entry is GameBoxTeam => Boolean(entry));
+
+  const leaders = asArray<any>(data?.leaders)
+    .map(toGameTeamLeaders)
+    .filter((entry): entry is GameTeamLeaders => Boolean(entry));
+
+  return {
+    game,
+    season:
+      normalizeSeasonName(header?.season?.displayName) ??
+      (header?.season?.year ? seasonLabel(header.season.year) : undefined),
+    venue: venue?.fullName ?? game.venue,
+    venueCity,
+    attendance:
+      typeof info?.attendance === "number" ? info.attendance : undefined,
+    officials: asArray<any>(info?.officials).map(toGameOfficial),
+    teamStats,
+    leaders,
+    boxscore,
+  };
 }

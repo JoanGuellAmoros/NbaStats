@@ -150,6 +150,96 @@ async function main() {
   check(gameCards > 0, "partits d'avui renderitzats", `${gameCards} partits`);
   await page.screenshot({ path: path.join(SHOTS, "06-games.png"), fullPage: true });
 
+  // Detall de partit (descàrrega manual)
+  const completedGameId = await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("nbastats");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction("cache", "readonly");
+    const store = tx.objectStore("cache");
+    const values = await new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    const games = values.flatMap((entry) => entry?.data?.games ?? []);
+    return games.find((game) => game?.state === "post" && game?.id)?.id ?? null;
+  });
+  check(Boolean(completedGameId), "hi ha un partit acabat a la memòria", completedGameId ?? "cap");
+
+  if (completedGameId) {
+    const requestsBeforeDetail = statsRequests.length;
+    await page.evaluate((gameId) => {
+      window.location.hash = `#/partits/${gameId}`;
+    }, completedGameId);
+    await page
+      .getByRole("button", { name: /Descarrega els detalls/i })
+      .first()
+      .waitFor({ timeout: 15_000 });
+    await page.waitForTimeout(500);
+    const detailHeading = await page
+      .getByRole("heading", { level: 1 })
+      .innerText();
+    check(
+      !detailHeading.includes("Detalls del partit"),
+      "el partit es resol des de la cache del calendari",
+      detailHeading,
+    );
+    check(
+      statsRequests.length === requestsBeforeDetail,
+      "obrir un detall no fa cap petició automàtica",
+      `${statsRequests.length - requestsBeforeDetail} peticions`,
+    );
+
+    await page
+      .getByRole("button", { name: /Descarrega els detalls/i })
+      .first()
+      .click();
+    await page
+      .getByRole("heading", { name: "Estadístiques d'equip" })
+      .waitFor({ timeout: 60_000 });
+    await page.waitForTimeout(500);
+
+    const quarters = await page
+      .getByRole("heading", { name: "Punts per quart" })
+      .count();
+    const boxscoreTables = await page.locator("table").count();
+    check(quarters === 1, "parcials per quart visibles");
+    check(boxscoreTables >= 3, "box score visible", `${boxscoreTables} taules`);
+    check(
+      (await page.getByRole("heading", { name: "Líders del partit" }).count()) > 0,
+      "líders del partit visibles",
+    );
+    await page.screenshot({
+      path: path.join(SHOTS, "07-game-detail.png"),
+      fullPage: true,
+    });
+
+    const gameKeys = await page.evaluate(async () => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("nbastats");
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const tx = db.transaction("cache", "readonly");
+      const store = tx.objectStore("cache");
+      const keys = await new Promise((resolve, reject) => {
+        const request = store.getAllKeys();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return keys.map(String);
+    });
+    check(
+      gameKeys.includes(`snapshot:game:${completedGameId}`),
+      "detall del partit desat a IndexedDB",
+    );
+  }
+
   // Jugadors
   await page.getByRole("link", { name: "Jugadors", exact: true }).click();
   await page.waitForTimeout(500);
@@ -193,6 +283,23 @@ async function main() {
   const offlineRows = await page.locator("table tbody tr").count();
   check(offlineRows === 30, "la classificació es llegeix offline", `${offlineRows} files`);
   await page.screenshot({ path: path.join(SHOTS, "11-offline.png"), fullPage: true });
+
+  if (completedGameId) {
+    await page.evaluate((gameId) => {
+      window.location.hash = `#/partits/${gameId}`;
+    }, completedGameId);
+    await page
+      .getByRole("heading", { name: "Estadístiques d'equip" })
+      .waitFor({ timeout: 15_000 });
+    check(
+      (await page.locator("table").count()) >= 3,
+      "el detall del partit es llegeix offline",
+    );
+    await page.screenshot({
+      path: path.join(SHOTS, "12-offline-game.png"),
+      fullPage: true,
+    });
+  }
 
   const offlineStats = statsRequests.length;
   await page.waitForTimeout(800);

@@ -32,6 +32,19 @@ await page.getByRole("link", { name: "Partits", exact: true }).click();
 await page.waitForTimeout(600);
 await page.screenshot({ path: path.join(SHOTS, "m03-games.png"), fullPage: true });
 
+await page.evaluate(() => {
+  window.location.hash = "#/partits/401909853";
+});
+await page
+  .getByRole("button", { name: /Descarrega els detalls/i })
+  .first()
+  .click();
+await page
+  .getByRole("heading", { name: "Estadístiques d'equip" })
+  .waitFor({ timeout: 60_000 });
+await page.waitForTimeout(600);
+await page.screenshot({ path: path.join(SHOTS, "m04-game.png"), fullPage: true });
+
 await page.getByRole("link", { name: "Classificació" }).first().click();
 await page.waitForTimeout(600);
 await page.screenshot({ path: path.join(SHOTS, "m04-standings.png"), fullPage: true });

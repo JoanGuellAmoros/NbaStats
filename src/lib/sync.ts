@@ -1,4 +1,5 @@
 import {
+  fetchGameDetail,
   fetchLeaders,
   fetchPlayerDetail,
   fetchScoreboard,
@@ -8,6 +9,7 @@ import {
 import { KEY, readEntry, setLastSync, writeEntry } from "./cache";
 import { dateRange, errorMessage, todayIso } from "./format";
 import type {
+  GameDetail,
   LeaderCategory,
   PlayerDetail,
   StandingsSnapshot,
@@ -234,5 +236,14 @@ export async function downloadPlayer(
 ): Promise<PlayerDetail> {
   const detail = await fetchPlayerDetail(playerId, signal);
   await writeEntry(KEY.player(playerId), detail);
+  return detail;
+}
+
+export async function downloadGame(
+  gameId: string,
+  signal?: AbortSignal,
+): Promise<GameDetail> {
+  const detail = await fetchGameDetail(gameId, signal);
+  await writeEntry(KEY.game(gameId), detail);
   return detail;
 }
