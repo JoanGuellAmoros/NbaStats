@@ -380,11 +380,53 @@ async function main() {
     fullPage: true,
   });
 
-  // Jugadors
+  // Jugadors: es calculen dels boxscores, sense rànquings d'ESPN
+  const removedLeaders = await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("nbastats");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction("cache", "readwrite");
+    const store = tx.objectStore("cache");
+    const keys = await new Promise((resolve, reject) => {
+      const request = store.getAllKeys();
+      request.onsuccess = () => resolve(request.result.map(String));
+      request.onerror = () => reject(request.error);
+    });
+    const leaders = keys.filter((key) => key.startsWith("snapshot:leaders:"));
+    for (const key of leaders) store.delete(key);
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve(undefined);
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+    return leaders.length;
+  });
+  check(
+    removedLeaders === 6,
+    "els rànquings d'ESPN s'esborren abans de calcular Jugadors",
+    `${removedLeaders} claus`,
+  );
+
+  const requestsBeforePlayers = statsRequests.length;
   await page.getByRole("link", { name: "Jugadors", exact: true }).click();
   await page.waitForTimeout(500);
   const leaderRows = await page.locator("table tbody tr").count();
-  check(leaderRows === 50, "50 líders en punts", `${leaderRows} files`);
+  check(leaderRows === 50, "50 líders calculats dels boxscores", `${leaderRows} files`);
+  check(
+    (await page.getByText(/boxscores de \d+ partits? descarregats?/).count()) > 0,
+    "la pantalla indica que les dades són calculades",
+  );
+  check(
+    (await page.getByRole("button", { name: /Descarrega/i }).count()) === 0,
+    "la pantalla de jugadors no ofereix cap descàrrega",
+  );
+  check(
+    statsRequests.length === requestsBeforePlayers,
+    "la pantalla de jugadors no fa cap petició a ESPN",
+    `${statsRequests.length - requestsBeforePlayers} peticions`,
+  );
   const playerTeamLogos = await page
     .locator('table tbody img[src*="/teamlogos/"]')
     .count();

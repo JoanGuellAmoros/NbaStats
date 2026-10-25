@@ -9,7 +9,7 @@ cap petició automàtica en obrir l'app, navegar-hi ni tornar a la finestra.
   partits de dies passats)
 - Classificació per conferències
 - Equips amb plantilla i calendari (descàrrega sota demanda)
-- Líders estadístics i fitxes de jugador (descàrrega sota demanda)
+- Jugadors amb estadístiques calculades a partir dels boxscores descarregats
 - PWA instal·lable, amb app shell i logos d'equip a la cache del navegador
 
 Interfície en català. Les dades provenen de les APIs JSON públiques d'ESPN
@@ -98,6 +98,11 @@ passats**. El dia d'avui i els dies futurs no mostren el botó de descàrrega ni
 enllacen a la pàgina de detall; si s'hi entra directament per l'adreça, es mostra
 un avís i no s'ofereix cap descàrrega. El dia del calendari es calcula amb la
 data NBA (zona horària `America/New_York`) del partit.
+
+La pantalla *Jugadors* no fa cap descàrrega: agrega els boxscores de tots els
+`snapshot:game:<id>` desats i en calcula partits jugats, mitjanes (minuts, punts,
+rebots, assistències, robatoris, taps i triples) i percentatges (TC% i 3P%). Els
+partits nous apareixen a la llista tan bon punt es descarreguen els seus detalls.
 
 Cancel·lar una sincronització conserva les dades que ja hi havia. Si una
 petició falla, la resta continuen i els errors es mostren en un desplegable.

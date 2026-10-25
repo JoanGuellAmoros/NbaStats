@@ -8,6 +8,7 @@ import {
 } from "../src/lib/espn";
 import { LEADER_CATEGORIES } from "../src/lib/sync";
 import { canViewGameDetail } from "../src/lib/games";
+import { aggregatePlayers } from "../src/lib/aggregate";
 import { shiftIsoDate, todayIso } from "../src/lib/format";
 
 function assert(condition: unknown, message: string): void {
@@ -101,6 +102,42 @@ async function main() {
   assert(boxPlayers.length > 10, "jugadors amb minuts al box score");
   assert(detail.leaders.length === 2, "líders dels dos equips");
   assert(Boolean(detail.game.venue ?? detail.venue), "pavelló del partit");
+
+  const aggregated = aggregatePlayers([detail]);
+  const boxPlayersPlayed = detail.boxscore
+    .flatMap((box) => box.players)
+    .filter(
+      (player) =>
+        !player.didNotPlay && Number(player.stats.minutes ?? "0") > 0,
+    );
+  const boxTop = [...boxPlayersPlayed].sort(
+    (a, b) => Number(b.stats.points ?? "0") - Number(a.stats.points ?? "0"),
+  )[0];
+  const computedTop = aggregated.players.find(
+    (player) => player.name === boxTop?.name,
+  );
+  console.log("aggregated:", {
+    games: aggregated.games,
+    players: aggregated.players.length,
+    top: computedTop?.name,
+    topAvgPoints: computedTop?.stats.avgPoints,
+    topFieldGoalPct: computedTop?.stats.fieldGoalPct,
+  });
+  assert(aggregated.games === 1, "un partit agregat dels boxscores");
+  assert(
+    aggregated.players.length === boxPlayersPlayed.length,
+    "tots els jugadors amb minuts entren a l'agregat",
+  );
+  assert(
+    aggregated.players.every((player) => player.stats.gamesPlayed === 1),
+    "un partit jugat per jugador",
+  );
+  assert(
+    Boolean(boxTop) &&
+      computedTop?.name === boxTop.name &&
+      computedTop?.stats.avgPoints === Number(boxTop.stats.points),
+    "mitjana de punts calculada del boxscore",
+  );
 
   let allLeadersOk = true;
   for (const category of LEADER_CATEGORIES) {

@@ -12,6 +12,7 @@ import type {
   CacheEntry,
   CacheSummary,
   Game,
+  GameDetail,
   Settings,
   StorageInfo,
 } from "./types";
@@ -152,6 +153,22 @@ export async function findCachedGame(gameId: string): Promise<Game | undefined> 
   }
 
   return undefined;
+}
+
+export async function readAllGameDetails(): Promise<GameDetail[]> {
+  const allKeys = await listKeys();
+  const keys = allKeys.filter((key) => key.startsWith("snapshot:game:"));
+  const entries = await Promise.all(
+    keys.map((key) => readEntry<GameDetail>(key)),
+  );
+
+  return entries
+    .filter((entry): entry is CacheEntry<GameDetail> => Boolean(entry))
+    .map((entry) => entry.data)
+    .sort(
+      (a, b) =>
+        new Date(a.game.date).getTime() - new Date(b.game.date).getTime(),
+    );
 }
 
 export async function getStorageInfo(): Promise<StorageInfo> {
