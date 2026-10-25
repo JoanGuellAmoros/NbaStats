@@ -1,36 +1,154 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NbaStats
 
-## Getting Started
+Estadístiques de l'NBA en una web app **offline-first**. Les dades es guarden al
+navegador (IndexedDB) i **només s'actualitzen quan tu prems el botó**. No hi ha
+cap petició automàtica en obrir l'app, navegar-hi ni tornar a la finestra.
 
-First, run the development server:
+- Partits i calendari diari
+- Classificació per conferències
+- Equips amb plantilla i calendari (descàrrega sota demanda)
+- Líders estadístics i fitxes de jugador (descàrrega sota demanda)
+- PWA instal·lable, amb app shell i imatges d'ESPN a la cache del navegador
+
+Interfície en català. Les dades provenen de les APIs JSON públiques d'ESPN
+(`site.web.api.espn.com`); no es fa cap mena de scraping.
+
+## Requisits
+
+- Node.js 20 o superior
+- Un navegador modern amb IndexedDB i service workers
+
+## Desenvolupament
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Obre `http://localhost:5173`. El service worker només s'activa en compilacions de
+producció, però la resta de funcions (cache, sincronització manual) ja
+funcionen en desenvolupament.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Compilació i proves locals
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run preview
+```
 
-## Learn More
+`npm run preview` serveix la build a `http://localhost:4173`.
 
-To learn more about Next.js, take a look at the following resources:
+> El service worker requereix `http://localhost` o HTTPS. Obrir
+> `dist/index.html` amb `file://` no el registrarà, i algunes funcions de
+> persistència tampoc no hi estaran disponibles.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Script              | Què fa                                    |
+| ------------------- | ----------------------------------------- |
+| `npm run dev`       | Servidor de desenvolupament amb HMR       |
+| `npm run build`     | Typecheck (`tsc --noEmit`) i build a `dist` |
+| `npm run preview`   | Serveix la build de producció             |
+| `npm run typecheck` | Només comprovació de tipus                |
 
-## Deploy on Vercel
+### Comprovacions opcionals
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Amb `npm run preview` en marxa i Google Chrome instal·lat:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Comanda                          | Què comprova                                                        |
+| -------------------------------- | ------------------------------------------------------------------- |
+| `npx tsx scripts/smoke.ts`       | Els adaptadors d'ESPN retornen dades vàlides                        |
+| `node scripts/check-app.mjs`     | E2E: cap petició en obrir, sync manual, IndexedDB, offline, PWA      |
+| `node scripts/overflow-audit.mjs`| Desbordament horitzontal a 390 px a totes les pàgines                |
+| `node scripts/mobile-shots.mjs`  | Captures de mòbil a `%TEMP%\nbastats-shots\mobile`                  |
+
+Aquestes comprovacions fan peticions reals a ESPN i necessiten connexió.
+
+## Com funciona la sincronització manual
+
+El panell **Actualitza les dades** (capçalera, inici i pàgina *Dades*) permet
+triar:
+
+1. **Marcadors al voltant d'avui**: 0, 3, 7, 14 o 30 dies (rang complet
+   `±dies`).
+2. **Detalls dels 30 equips**: afegeix plantilles i calendaris complets
+   (unes 60 peticions addicionals).
+
+Cada acció desa els resultats a IndexedDB amb la marca de temps
+`{ data, fetchedAt }`. La resta de la interfície llegeix **sempre** d'aquesta
+memòria, també quan hi ha connexió.
+
+A més, hi ha descàrregues puntuals:
+
+- Un dia concret de partits, des de *Partits*.
+- La fitxa d'un equip, des de la seva pàgina.
+- La fitxa d'un jugador, des de la seva pàgina.
+
+Cancel·lar una sincronització conserva les dades que ja hi havia. Si una
+petició falla, la resta continuen i els errors es mostren en un desplegable.
+
+### Què es desa
+
+| Clau                            | Contingut                          |
+| ------------------------------- | ---------------------------------- |
+| `snapshot:standings`            | Classificació (Est/Oest)           |
+| `snapshot:scoreboard:<AAAA-MM-DD>` | Partits d'un dia                |
+| `snapshot:leaders:<categoria>`  | Rànquing de líders                 |
+| `snapshot:team:<id>`            | Plantilla i calendari d'un equip   |
+| `snapshot:player:<id>`          | Biografia i estadístiques          |
+| `meta:lastSync`                 | Marca de temps de l'última sync    |
+| `meta:settings`                 | Perfil de sincronització           |
+
+La pàgina *Dades* mostra l'espai utilitzat, permet exportar/importar un JSON de
+backup, esborrar la cache i demanar emmagatzematge persistent al navegador.
+
+## Desplegament estàtic
+
+La build genera fitxers estàtics a `dist/`. Com que les rutes fan servir
+`HashRouter` (`/#/partits`), no calen reescriptures del costat del servidor;
+n'hi ha prou de publicar el contingut de `dist/`.
+
+```bash
+npm run build
+# puja el contingut de dist/ al teu host estàtic
+```
+
+### Publicació en un subdirectori
+
+Si l'app no viu a l'arrel del domini, defineix `VITE_BASE` abans de compilar:
+
+```bash
+# PowerShell
+$env:VITE_BASE = "/nba/"; npm run build
+```
+
+```bash
+# bash
+VITE_BASE=/nba/ npm run build
+```
+
+Això ajusta les rutes dels assets, el manifest i l'abast del service worker.
+
+## Estructura
+
+```
+src/
+  components/     UI reutilitzable (targetes, taules, panells, icones)
+  context/        DataContext: estat de sync, offline, toasts, backup
+  hooks/          Hooks de lectura de la cache
+  lib/            Tipus, client i normalitzadors d'ESPN, cache, sync, format
+  pages/          Rutes de l'app
+  App.tsx         Router i shell
+  main.tsx        Arrencada, fonts i registre del service worker
+```
+
+## Notes
+
+- La cache és per navegador i per origen: exporta un backup si vols moure les
+  dades.
+- Les imatges d'ESPN (`a.espncdn.com`) es cachegen quan es mostren per primera
+  vegada (estratègia `CacheFirst`).
+- Els resultats d'ESPN poden variar segons la temporada; l'app normalitza les
+  respostes abans de desar-les, així que els canvis de format no afecten la
+  resta de la interfície.
+- Projecte no afiliat a l'NBA ni a ESPN.
