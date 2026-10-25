@@ -14,6 +14,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { GameCard } from "@/components/GameCard";
 import { PageHeader } from "@/components/PageHeader";
+import { canViewGameDetail } from "@/lib/games";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -41,6 +42,7 @@ export default function GamesPage() {
   const previous = shiftIsoDate(date, -1);
   const next = shiftIsoDate(date, 1);
   const isToday = date === today;
+  const detailGames = (data?.games ?? []).filter(canViewGameDetail);
 
   const handleDownload = async () => {
     setBusy(true);
@@ -49,9 +51,9 @@ export default function GamesPage() {
   };
 
   const handleDownloadAll = async () => {
-    if (!data || data.games.length === 0) return;
+    if (detailGames.length === 0) return;
 
-    const gameIds = data.games.map((game) => game.id);
+    const gameIds = detailGames.map((game) => game.id);
     setBulk({ done: 0, total: gameIds.length });
 
     try {
@@ -110,7 +112,7 @@ export default function GamesPage() {
           {fetchedAt && <span>· desat {timeAgo(fetchedAt)}</span>}
         </div>
 
-        {data && data.games.length > 0 && (
+        {detailGames.length > 0 && (
           <button
             type="button"
             className="btn-secondary w-full sm:w-auto"

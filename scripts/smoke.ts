@@ -7,6 +7,7 @@ import {
   fetchTeamDetail,
 } from "../src/lib/espn";
 import { LEADER_CATEGORIES } from "../src/lib/sync";
+import { canViewGameDetail } from "../src/lib/games";
 import { shiftIsoDate, todayIso } from "../src/lib/format";
 
 function assert(condition: unknown, message: string): void {
@@ -42,6 +43,17 @@ async function main() {
     const day = await fetchScoreboard(date);
     console.log(`scoreboard ${date}: ${day.games.length} partits, season=${day.season}`);
     assert(day.date === date, `data normalitzada ${date}`);
+    assert(
+      day.games.every((game) => game.day === date),
+      `dia de calendari NBA ${date}`,
+    );
+    if (day.games.length > 0) {
+      const detailAllowed = offset < 0;
+      assert(
+        day.games.every((game) => canViewGameDetail(game) === detailAllowed),
+        `detall ${detailAllowed ? "permès" : "bloquejat"} ${date}`,
+      );
+    }
     if (day.games[0]) {
       const game = day.games[0];
       console.log("game sample:", {
@@ -116,7 +128,7 @@ async function main() {
   });
   assert(team.roster.length > 0, "plantilla de l'equip");
   assert(team.schedule.length > 0, "calendari de l'equip");
-  assert(Boolean(team.roster[0]?.headshot), "foto del primer jugador");
+  assert(!("headshot" in team.roster[0]), "sense imatges a la plantilla");
 
   const player = await fetchPlayerDetail("4065733");
   console.log("player:", {
@@ -130,7 +142,7 @@ async function main() {
   });
   assert(player.stats.length > 0, "estadístiques del jugador");
   assert(player.averages.length > 0, "mitjanes de la temporada");
-  assert(Boolean(player.headshot), "foto del jugador");
+  assert(!("headshot" in player), "sense imatges al jugador");
 }
 
 main().catch((error) => {

@@ -24,6 +24,12 @@ function todayInMadrid() {
   }).format(new Date());
 }
 
+function shiftIsoDate(iso, days) {
+  const date = new Date(`${iso}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 async function main() {
   await mkdir(SHOTS, { recursive: true });
 
@@ -38,12 +44,14 @@ async function main() {
   const statsRequests = [];
   const allRequests = [];
   const failedRequests = [];
+  const headshotRequests = [];
   const pageErrors = [];
 
   page.on("request", (request) => {
     const url = request.url();
     allRequests.push(url);
     if (espnApi(url)) statsRequests.push(url);
+    if (/a\.espncdn\.com\/i\/headshots\//i.test(url)) headshotRequests.push(url);
   });
   page.on("requestfailed", (request) => {
     if (espnApi(request.url())) {
@@ -143,36 +151,29 @@ async function main() {
   check(teamCards === 30, "30 targetes d'equip", `${teamCards} targetes`);
   await page.screenshot({ path: path.join(SHOTS, "05-teams.png"), fullPage: true });
 
-  // Partits
+  // Partits (avui): es poden veure, però no descarregar detalls
   await page.getByRole("link", { name: "Partits", exact: true }).click();
   await page.waitForTimeout(500);
   const gameCards = await page.locator("article").count();
   check(gameCards > 0, "partits d'avui renderitzats", `${gameCards} partits`);
+  check(
+    (await page
+      .getByRole("button", { name: /Carrega tots els detalls/i })
+      .count()) === 0,
+    "sense botó massiu per als partits d'avui",
+  );
+  check(
+    (await page.locator('a[href^="#/partits/"]').count()) === 0,
+    "les targetes d'avui no enllacen al detall",
+  );
+  check(
+    (await page.getByText("Detalls no disponibles").count()) === gameCards,
+    "cada targeta d'avui indica que no hi ha detalls",
+  );
   await page.screenshot({ path: path.join(SHOTS, "06-games.png"), fullPage: true });
 
-  // Descàrrega massiva dels detalls del dia
-  const bulkRequestsBefore = statsRequests.length;
-  await page
-    .getByRole("button", { name: /Carrega tots els detalls/i })
-    .click();
-  const bulkOutcome = await Promise.race([
-    page
-      .getByText(/detalls de partit desats a la memòria/)
-      .waitFor({ timeout: 180_000 })
-      .then(() => "ok"),
-    page
-      .getByText(/S'han desat \d+ de \d+ detalls/)
-      .waitFor({ timeout: 180_000 })
-      .then(() => "partial"),
-  ]).catch(() => "timeout");
-  check(bulkOutcome === "ok", "el botó massiu desa tots els detalls", bulkOutcome);
-  check(
-    statsRequests.length - bulkRequestsBefore >= gameCards,
-    "el botó massiu fa una petició per partit",
-    `${statsRequests.length - bulkRequestsBefore} peticions`,
-  );
-
-  const bulkGameKeys = await page.evaluate(async () => {
+  // Ruta directa a un partit d'avui: bloquejada
+  const todayGameId = await page.evaluate(async (today) => {
     const db = await new Promise((resolve, reject) => {
       const request = indexedDB.open("nbastats");
       request.onsuccess = () => resolve(request.result);
@@ -180,23 +181,49 @@ async function main() {
     });
     const tx = db.transaction("cache", "readonly");
     const store = tx.objectStore("cache");
-    const keys = await new Promise((resolve, reject) => {
-      const request = store.getAllKeys();
+    const entry = await new Promise((resolve, reject) => {
+      const request = store.get(`snapshot:scoreboard:${today}`);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
     db.close();
-    return keys.map(String).filter((key) => key.startsWith("snapshot:game:"));
-  });
-  check(
-    bulkGameKeys.length >= gameCards,
-    "detalls de tots els partits del dia a IndexedDB",
-    `${bulkGameKeys.length} detalls`,
-  );
-  await page.screenshot({
-    path: path.join(SHOTS, "06-games-bulk.png"),
-    fullPage: true,
-  });
+    return entry?.data?.games?.[0]?.id ?? null;
+  }, todayInMadrid());
+  check(Boolean(todayGameId), "hi ha un partit d'avui a la memòria", todayGameId ?? "cap");
+
+  if (todayGameId) {
+    const requestsBeforeBlocked = statsRequests.length;
+    await page.evaluate((gameId) => {
+      window.location.hash = `#/partits/${gameId}`;
+    }, todayGameId);
+    await page
+      .getByText("Detalls no disponibles", { exact: true })
+      .waitFor({ timeout: 15_000 });
+    check(
+      (await page
+        .getByRole("button", { name: /Descarrega els detalls/i })
+        .count()) === 0,
+      "la ruta directa d'avui no ofereix descàrrega",
+    );
+    check(
+      (await page
+        .getByRole("heading", { name: "Estadístiques d'equip" })
+        .count()) === 0,
+      "la ruta directa d'avui no mostra estadístiques",
+    );
+    check(
+      statsRequests.length === requestsBeforeBlocked,
+      "bloquejar un partit d'avui no fa cap petició",
+      `${statsRequests.length - requestsBeforeBlocked} peticions`,
+    );
+    await page.screenshot({
+      path: path.join(SHOTS, "06-games-blocked.png"),
+      fullPage: true,
+    });
+
+    await page.getByRole("link", { name: "Torna al calendari" }).click();
+    await page.waitForTimeout(500);
+  }
 
   // Detall de partit (descàrrega manual)
   const completedGameId = await page.evaluate(async () => {
@@ -288,6 +315,71 @@ async function main() {
     );
   }
 
+  // Descàrrega massiva dels detalls d'un dia passat
+  const previousDay = shiftIsoDate(todayInMadrid(), -1);
+  await page.evaluate((day) => {
+    window.location.hash = `#/partits?data=${day}`;
+  }, previousDay);
+  await page
+    .getByRole("button", { name: /Carrega tots els detalls/i })
+    .waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(400);
+  const pastCards = await page.locator("article").count();
+  const pastLinks = await page.locator('a[href^="#/partits/"]').count();
+  check(pastCards > 0, "partits del dia anterior renderitzats", `${pastCards} partits`);
+  check(
+    pastLinks === pastCards,
+    "les targetes del dia anterior enllacen al detall",
+    `${pastLinks}/${pastCards} enllaços`,
+  );
+
+  const bulkRequestsBefore = statsRequests.length;
+  await page
+    .getByRole("button", { name: /Carrega tots els detalls/i })
+    .click();
+  const bulkOutcome = await Promise.race([
+    page
+      .getByText(/detalls de partit desats a la memòria/)
+      .waitFor({ timeout: 180_000 })
+      .then(() => "ok"),
+    page
+      .getByText(/S'han desat \d+ de \d+ detalls/)
+      .waitFor({ timeout: 180_000 })
+      .then(() => "partial"),
+  ]).catch(() => "timeout");
+  check(bulkOutcome === "ok", "el botó massiu desa tots els detalls", bulkOutcome);
+  check(
+    statsRequests.length - bulkRequestsBefore >= pastCards,
+    "el botó massiu fa una petició per partit",
+    `${statsRequests.length - bulkRequestsBefore} peticions`,
+  );
+
+  const bulkGameKeys = await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("nbastats");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction("cache", "readonly");
+    const store = tx.objectStore("cache");
+    const keys = await new Promise((resolve, reject) => {
+      const request = store.getAllKeys();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return keys.map(String).filter((key) => key.startsWith("snapshot:game:"));
+  });
+  check(
+    bulkGameKeys.length >= pastCards,
+    "detalls de tots els partits del dia a IndexedDB",
+    `${bulkGameKeys.length} detalls`,
+  );
+  await page.screenshot({
+    path: path.join(SHOTS, "06-games-bulk.png"),
+    fullPage: true,
+  });
+
   // Jugadors
   await page.getByRole("link", { name: "Jugadors", exact: true }).click();
   await page.waitForTimeout(500);
@@ -319,6 +411,12 @@ async function main() {
   await page.getByRole("link", { name: "Dades", exact: true }).first().click();
   await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(SHOTS, "10-data.png"), fullPage: true });
+
+  check(
+    headshotRequests.length === 0,
+    "cap imatge de jugador descarregada",
+    headshotRequests.slice(0, 3).join(" | "),
+  );
 
   // Offline: recàrrega completa sense xarxa
   await context.setOffline(true);

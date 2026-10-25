@@ -125,7 +125,6 @@ export default function PlayerPage() {
         <div className="flex items-center gap-4">
           <PlayerAvatar
             name={data.name}
-            src={data.headshot}
             size={88}
             className="border border-white/10 bg-white/[0.04]"
           />

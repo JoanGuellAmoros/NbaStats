@@ -267,11 +267,7 @@ export default function TeamPage() {
                           to={`/jugadors/${player.id}`}
                           className="flex items-center gap-3"
                         >
-                          <PlayerAvatar
-                            name={player.name}
-                            src={player.headshot}
-                            size={30}
-                          />
+                          <PlayerAvatar name={player.name} size={30} />
                           <span className="font-medium text-zinc-200 hover:text-white">
                             {player.name}
                           </span>

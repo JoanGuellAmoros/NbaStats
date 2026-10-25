@@ -5,11 +5,12 @@ navegador (IndexedDB) i **només s'actualitzen quan tu prems el botó**. No hi h
 cap petició automàtica en obrir l'app, navegar-hi ni tornar a la finestra.
 
 - Partits i calendari diari
-- Detall de cada partit: parcials, estadístiques, líders i box score
+- Detall de cada partit: parcials, estadístiques, líders i box score (només
+  partits de dies passats)
 - Classificació per conferències
 - Equips amb plantilla i calendari (descàrrega sota demanda)
 - Líders estadístics i fitxes de jugador (descàrrega sota demanda)
-- PWA instal·lable, amb app shell i imatges d'ESPN a la cache del navegador
+- PWA instal·lable, amb app shell i logos d'equip a la cache del navegador
 
 Interfície en català. Les dades provenen de les APIs JSON públiques d'ESPN
 (`site.web.api.espn.com`); no es fa cap mena de scraping.
@@ -83,13 +84,20 @@ A més, hi ha descàrregues puntuals:
 
 - Un dia concret de partits, des de *Partits*.
 - Els detalls d'un partit, des de la seva pàgina.
-- Tots els detalls dels partits d'un dia, amb un sol botó des de *Partits*.
+- Tots els detalls dels partits d'un dia, amb un sol botó des de *Partits*
+  (només per a dies passats).
 - La fitxa d'un equip, des de la seva pàgina.
 - La fitxa d'un jugador, des de la seva pàgina.
 
 Els parcials per quart ja viatgen dins del marcador diari. La resta del detall
 (estadístiques d'equip, líders i box score) es descarrega a part perquè el
 calendari pugui cobrir molts dies sense fer una petició per partit.
+
+Els detalls només es poden consultar i descarregar per als partits de **dies
+passats**. El dia d'avui i els dies futurs no mostren el botó de descàrrega ni
+enllacen a la pàgina de detall; si s'hi entra directament per l'adreça, es mostra
+un avís i no s'ofereix cap descàrrega. El dia del calendari es calcula amb la
+data NBA (zona horària `America/New_York`) del partit.
 
 Cancel·lar una sincronització conserva les dades que ja hi havia. Si una
 petició falla, la resta continuen i els errors es mostren en un desplegable.
@@ -154,8 +162,9 @@ src/
 
 - La cache és per navegador i per origen: exporta un backup si vols moure les
   dades.
-- Les imatges d'ESPN (`a.espncdn.com`) es cachegen quan es mostren per primera
-  vegada (estratègia `CacheFirst`).
+- Només es descarreguen imatges dels logos d'equip (`a.espncdn.com/i/teamlogos`).
+  Es guarden una sola vegada amb estratègia `CacheFirst` i no caduquen. Els
+  jugadors es mostren amb les inicials, sense fotos.
 - Els resultats d'ESPN poden variar segons la temporada; l'app normalitza les
   respostes abans de desar-les, així que els canvis de format no afecten la
   resta de la interfície.

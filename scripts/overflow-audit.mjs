@@ -12,10 +12,26 @@ const page = await context.newPage();
 
 await page.goto(APP_URL, { waitUntil: "networkidle" });
 await page.getByRole("button", { name: /Actualitza/i }).first().click();
-await page.locator("select").selectOption("0");
+await page.locator("select").selectOption("3");
 await page.getByRole("button", { name: /Actualitza ara/i }).click();
 await page.getByText("Totes les dades seleccionades").waitFor({ timeout: 120_000 });
 await page.getByRole("button", { name: /^Tanca$/ }).click();
+
+function shiftIsoDate(iso, days) {
+  const date = new Date(`${iso}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+const previousDay = shiftIsoDate(
+  new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Europe/Madrid",
+  }).format(new Date()),
+  -1,
+);
 
 const routes = [
   ["Inici", "/"],
@@ -51,10 +67,11 @@ for (const [label, route] of routes) {
   await audit(label);
 }
 
-// Game detail (sample completed game)
-await page.evaluate(() => {
-  window.location.hash = "#/partits/401909853";
-});
+// Game detail (past day)
+await page.evaluate((day) => {
+  window.location.hash = `#/partits?data=${day}`;
+}, previousDay);
+await page.locator('a[href^="#/partits/"]').first().click();
 await page
   .getByRole("button", { name: /Descarrega els detalls/i })
   .first()

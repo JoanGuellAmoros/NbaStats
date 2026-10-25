@@ -1,4 +1,5 @@
 const TIME_ZONE = "Europe/Madrid";
+const NBA_TIME_ZONE = "America/New_York";
 
 export function cn(
   ...classes: (string | false | null | undefined)[]
@@ -68,6 +69,24 @@ export function todayIso(timeZone = TIME_ZONE): string {
 
 export function isValidIsoDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+export function nbaCalendarDate(iso: string): string {
+  if (isValidIsoDate(iso)) return iso;
+
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso.slice(0, 10);
+
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: NBA_TIME_ZONE,
+  }).format(date);
+}
+
+export function isPastDay(day: string): boolean {
+  return day < todayIso();
 }
 
 export function shiftIsoDate(iso: string, days: number): string {

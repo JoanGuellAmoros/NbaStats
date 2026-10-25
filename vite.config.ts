@@ -50,14 +50,10 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/a\.espncdn\.com\/.*/i,
+            urlPattern: /^https:\/\/a\.espncdn\.com\/i\/teamlogos\/.*/i,
             handler: "CacheFirst",
             options: {
-              cacheName: "espn-images",
-              expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 60,
-              },
+              cacheName: "espn-team-logos",
               cacheableResponse: {
                 statuses: [0, 200],
               },

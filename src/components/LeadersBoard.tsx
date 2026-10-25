@@ -45,11 +45,7 @@ export function LeadersBoard({
             <span className="w-3 text-center text-xs tabular-nums text-zinc-500">
               {index + 1}
             </span>
-            <PlayerAvatar
-              name={player.name}
-              src={player.headshot}
-              size={32}
-            />
+            <PlayerAvatar name={player.name} size={32} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-zinc-200">
                 {player.name}

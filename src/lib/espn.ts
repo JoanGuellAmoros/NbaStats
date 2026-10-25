@@ -26,7 +26,7 @@ import type {
   Team,
   TeamDetail,
 } from "./types";
-import { espnDate, seasonLabel } from "./format";
+import { espnDate, nbaCalendarDate, seasonLabel } from "./format";
 
 const SITE = "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba";
 const WEB = "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba";
@@ -230,7 +230,11 @@ function toGameSide(competitor: any, fallbackTeam?: Team): GameSide {
   };
 }
 
-function normalizeGame(event: any, fallbackTeam?: Team): Game | null {
+function normalizeGame(
+  event: any,
+  fallbackTeam?: Team,
+  day?: string,
+): Game | null {
   const competition = asArray<any>(event?.competitions)[0];
   const competitors = asArray<any>(competition?.competitors);
   const home = competitors.find((entry) => entry?.homeAway === "home");
@@ -250,9 +254,12 @@ function normalizeGame(event: any, fallbackTeam?: Team): Game | null {
     awaySide.score = undefined;
   }
 
+  const date = event?.date ?? competition?.date;
+
   return {
     id: String(event?.id ?? competition?.id ?? `${home?.team?.id}-${away?.team?.id}`),
-    date: event?.date ?? competition?.date,
+    date,
+    day: day ?? (date ? nbaCalendarDate(date) : undefined),
     name: event?.name ?? `${away?.team?.displayName} at ${home?.team?.displayName}`,
     shortName: event?.shortName ?? `${away?.team?.abbreviation} @ ${home?.team?.abbreviation}`,
     state,
@@ -310,7 +317,7 @@ export async function fetchScoreboard(
   );
 
   const games = asArray<any>(data?.events)
-    .map((event) => normalizeGame(event))
+    .map((event) => normalizeGame(event, undefined, date))
     .filter((game): game is Game => Boolean(game))
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -336,7 +343,6 @@ function toRosterPlayer(raw: any): RosterPlayer {
     name: raw?.displayName ?? raw?.fullName ?? "Jugador",
     jersey: raw?.jersey,
     position: raw?.position?.abbreviation,
-    headshot: raw?.headshot?.href,
     age: typeof raw?.age === "number" ? raw.age : undefined,
     height: raw?.displayHeight,
     weight: raw?.displayWeight,
@@ -380,7 +386,6 @@ export async function fetchLeaders(
       teamId: athlete?.teamId ? String(athlete.teamId) : undefined,
       teamAbbreviation: athlete?.teamShortName,
       teamName: athlete?.teamName,
-      headshot: athlete?.headshot?.href,
       position: athlete?.position?.abbreviation,
       jersey: athlete?.jersey,
       stats,
@@ -501,7 +506,6 @@ export async function fetchPlayerDetail(
         : undefined,
     jersey: athlete?.jersey,
     position: athlete?.position?.abbreviation,
-    headshot: athlete?.headshot?.href,
     height: athlete?.displayHeight,
     weight: athlete?.displayWeight,
     birthDate: athlete?.displayDOB,
@@ -597,7 +601,6 @@ function toGameBoxTeam(
         shortName: athlete?.shortName,
         jersey: athlete?.jersey,
         position: athlete?.position?.abbreviation,
-        headshot: athlete?.headshot?.href,
         starter: Boolean(entry?.starter),
         didNotPlay: Boolean(entry?.didNotPlay),
         reason: entry?.didNotPlay ? entry?.reason : undefined,
@@ -636,7 +639,6 @@ function toGameTeamLeaders(raw: any): GameTeamLeaders | null {
           return {
             id: String(athlete?.id ?? ""),
             name: athlete?.displayName ?? athlete?.fullName ?? "Jugador",
-            headshot: athlete?.headshot?.href,
             jersey: athlete?.jersey,
             position: athlete?.position?.abbreviation,
             value: String(entry?.displayValue ?? entry?.mainStat?.value ?? "—"),

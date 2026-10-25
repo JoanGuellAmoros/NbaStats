@@ -19,7 +19,7 @@ await page.waitForTimeout(800);
 await page.screenshot({ path: path.join(SHOTS, "m01-home-empty.png"), fullPage: true });
 
 await page.getByRole("button", { name: /Actualitza/i }).first().click();
-await page.locator("select").selectOption("0");
+await page.locator("select").selectOption("3");
 await page.getByRole("button", { name: /Actualitza ara/i }).click();
 await page
   .getByText("Totes les dades seleccionades")
@@ -32,9 +32,26 @@ await page.getByRole("link", { name: "Partits", exact: true }).click();
 await page.waitForTimeout(600);
 await page.screenshot({ path: path.join(SHOTS, "m03-games.png"), fullPage: true });
 
-await page.evaluate(() => {
-  window.location.hash = "#/partits/401909853";
-});
+function shiftIsoDate(iso, days) {
+  const date = new Date(`${iso}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+const previousDay = shiftIsoDate(
+  new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Europe/Madrid",
+  }).format(new Date()),
+  -1,
+);
+
+await page.evaluate((day) => {
+  window.location.hash = `#/partits?data=${day}`;
+}, previousDay);
+await page.locator('a[href^="#/partits/"]').first().click();
 await page
   .getByRole("button", { name: /Descarrega els detalls/i })
   .first()

@@ -278,9 +278,9 @@ export default function DataPage() {
             llegeixen sempre d&apos;allà.
           </li>
           <li>
-            <span className="text-zinc-300">Imatges:</span> els logos i les
-            fotos d&apos;ESPN es cachegen automàticament pel navegador quan es
-            mostren per primera vegada.
+            <span className="text-zinc-300">Imatges:</span> només els logos
+            dels equips, que es guarden una sola vegada. Els jugadors es
+            mostren amb les inicials, sense fotos.
           </li>
         </ul>
       </section>

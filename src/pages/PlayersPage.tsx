@@ -110,11 +110,7 @@ export default function PlayersPage() {
                         to={`/jugadors/${player.id}`}
                         className="group flex items-center gap-3"
                       >
-                        <PlayerAvatar
-                          name={player.name}
-                          src={player.headshot}
-                          size={32}
-                        />
+                        <PlayerAvatar name={player.name} size={32} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-zinc-200 group-hover:text-white">
                             {player.name}

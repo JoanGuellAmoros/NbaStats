@@ -11,11 +11,16 @@ import type {
   GameTeamStats,
 } from "@/lib/types";
 import { cn, formatDateLong, formatTime, timeAgo } from "@/lib/format";
+import { canViewGameDetail } from "@/lib/games";
 import { EmptyState } from "@/components/EmptyState";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Badge, Spinner } from "@/components/ui";
-import { DownloadIcon, RefreshIcon } from "@/components/icons";
+import {
+  CalendarIcon,
+  DownloadIcon,
+  RefreshIcon,
+} from "@/components/icons";
 
 const TEAM_STAT_ROWS: { key: string; label: string }[] = [
   { key: "fieldGoalsMade-fieldGoalsAttempted", label: "Tirs de camp" },
@@ -343,7 +348,6 @@ function LeadersSection({ detail }: { detail: GameDetail }) {
                       >
                         <PlayerAvatar
                           name={player.name}
-                          src={player.headshot}
                           size={26}
                         />
                         <span className="min-w-0 flex-1 truncate text-xs text-zinc-300">
@@ -412,11 +416,7 @@ function BoxScoreTable({
               <tr key={player.id} className="transition-colors hover:bg-white/[0.03]">
                 <td className="sticky left-0 z-10 bg-zinc-900 px-4 py-2.5">
                   <div className="flex items-center gap-2">
-                    <PlayerAvatar
-                      name={player.name}
-                      src={player.headshot}
-                      size={24}
-                    />
+                    <PlayerAvatar name={player.name} size={24} />
                     <Link
                       to={player.id ? `/jugadors/${player.id}` : "#"}
                       className="max-w-44 truncate font-medium text-zinc-200 transition-colors hover:text-orange-400"
@@ -563,6 +563,34 @@ export default function GamePage() {
 
   if (detailState.loading || (!detail && cachedGameState.loading)) {
     return <DetailSkeleton />;
+  }
+
+  const detailAvailable = game ? canViewGameDetail(game) : false;
+
+  if (!game || !detailAvailable) {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
+        {game && (
+          <p className="mb-6 text-center text-sm font-medium text-zinc-400">
+            {game.away.team.name} – {game.home.team.name}
+          </p>
+        )}
+        <EmptyState
+          title="Detalls no disponibles"
+          description={
+            game
+              ? "Els partits d'avui i dels dies futurs encara no es poden consultar. Torna-hi quan el partit ja s'hagi jugat."
+              : "Aquest partit no és a la memòria. Només es poden veure els detalls dels partits passats que hagis descarregat abans des del calendari."
+          }
+          icon={<CalendarIcon className="size-6" />}
+          action={
+            <Link to="/partits" className="btn-secondary">
+              Torna al calendari
+            </Link>
+          }
+        />
+      </div>
+    );
   }
 
   const title = game

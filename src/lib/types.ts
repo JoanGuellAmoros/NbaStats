@@ -50,6 +50,7 @@ export type GameSide = {
 export type Game = {
   id: string;
   date: string;
+  day?: string;
   name: string;
   shortName: string;
   state: GameState;
@@ -85,7 +86,6 @@ export type GameTeamStats = {
 export type GameLeaderPlayer = {
   id: string;
   name: string;
-  headshot?: string;
   jersey?: string;
   position?: string;
   value: string;
@@ -113,7 +113,6 @@ export type GameBoxPlayer = {
   shortName?: string;
   jersey?: string;
   position?: string;
-  headshot?: string;
   starter: boolean;
   didNotPlay: boolean;
   reason?: string;
@@ -151,7 +150,6 @@ export type LeaderPlayer = {
   teamId?: string;
   teamAbbreviation?: string;
   teamName?: string;
-  headshot?: string;
   position?: string;
   jersey?: string;
   stats: Record<string, number>;
@@ -178,7 +176,6 @@ export type RosterPlayer = {
   name: string;
   jersey?: string;
   position?: string;
-  headshot?: string;
   age?: number;
   height?: string;
   weight?: string;
@@ -216,7 +213,6 @@ export type PlayerDetail = {
   team?: Team;
   jersey?: string;
   position?: string;
-  headshot?: string;
   height?: string;
   weight?: string;
   birthDate?: string;

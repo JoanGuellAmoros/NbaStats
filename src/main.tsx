@@ -9,6 +9,11 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 
 registerSW({ immediate: true });
 
+// L'app només guarda logos d'equip: allibera la cache antiga d'imatges.
+if (typeof caches !== "undefined") {
+  void caches.delete("espn-images");
+}
+
 const container = document.getElementById("root");
 
 if (container) {
