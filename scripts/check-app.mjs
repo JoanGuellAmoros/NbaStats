@@ -543,6 +543,69 @@ async function main() {
     "el canvi a mitjanes recupera les mitjanes",
     pointsBack[0],
   );
+
+  for (const label of [
+    "Tirs de 2",
+    "Tirs lliures",
+    "Rebots ofensius",
+    "Rebots defensius",
+    "Valoració",
+  ]) {
+    check(
+      (await page.getByRole("link", { name: label, exact: true }).count()) > 0,
+      `filtre ${label} disponible`,
+    );
+  }
+  await page.getByRole("link", { name: "Valoració", exact: true }).click();
+  await page.waitForTimeout(300);
+  const categorySearch = await page.evaluate(() => location.hash);
+  check(
+    categorySearch.includes("ordre=valoracio"),
+    "el filtre de valoració és actiu",
+    categorySearch,
+  );
+  const valueIndex = (
+    await playersTable.locator("thead th").allInnerTexts()
+  ).findIndex((header) => header.trim() === "VAL");
+  const valueCells = await playersTable
+    .locator(`tbody tr td:nth-child(${valueIndex + 1})`)
+    .allInnerTexts();
+  const valueNumbers = valueCells.map((value) =>
+    Number(value.trim().replace(",", ".")),
+  );
+  check(
+    valueNumbers.length > 50 &&
+      valueNumbers[0] >= valueNumbers[1] &&
+      valueNumbers[1] >= valueNumbers[2],
+    "els jugadors s'ordenen per valoració",
+    `${valueNumbers[0]} ≥ ${valueNumbers[1]} ≥ ${valueNumbers[2]}`,
+  );
+
+  const measureTable = () =>
+    page.evaluate(() => {
+      const table = document.querySelector("table");
+      const wrap = table?.parentElement;
+      return {
+        table: table?.scrollWidth ?? 0,
+        wrap: wrap?.clientWidth ?? 0,
+      };
+    });
+  const wideTable = await measureTable();
+  check(
+    wideTable.table <= wideTable.wrap + 1,
+    "la taula sencera cap a 1280 px",
+    `${wideTable.table}/${wideTable.wrap}`,
+  );
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.waitForTimeout(300);
+  const narrowTable = await measureTable();
+  check(
+    narrowTable.table <= narrowTable.wrap + 1,
+    "la taula sencera cap a 1024 px",
+    `${narrowTable.table}/${narrowTable.wrap}`,
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.waitForTimeout(300);
   check(
     (await page.getByText(/boxscores de \d+ partits? descarregats?/).count()) > 0,
     "la pantalla indica que les dades són calculades",

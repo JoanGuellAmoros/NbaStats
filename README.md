@@ -103,9 +103,12 @@ La pantalla *Jugadors* no fa cap descàrrega: agrega els boxscores de tots els
 `snapshot:game:<id>` desats i en calcula partits jugats, minuts, punts, rebots
 (totals, ofensius i defensius), assistències, robatoris, taps, tirs de 2,
 triples, tirs lliures, valoració i percentatges (TC% i 3P%) de tots els jugadors
-amb minuts. Un commutador permet veure les **mitjanes per partit** o els
-**totals acumulats** (els percentatges es calculen sempre amb els totals). Els
-partits nous apareixen a la llista tan bon punt es descarreguen els seus detalls.
+amb minuts. Es pot ordenar per qualsevol d'aquestes mètriques i un commutador
+permet veure les **mitjanes per partit** o els **totals acumulats** (els
+percentatges es calculen sempre amb els totals). La taula mostra totes les
+columnes sense desplaçament horitzontal en pantalles d'escriptori; a mòbil es
+mostra la columna de la categoria seleccionada. Els partits nous apareixen a la
+llista tan bon punt es descarreguen els seus detalls.
 
 Al box score, la columna **2P** es calcula restant els triples dels tirs de camp
 (`FG − 3P`) i la columna **VAL** aplica la fórmula

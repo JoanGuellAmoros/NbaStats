@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { categoryByKey, LEADER_CATEGORIES } from "@/lib/sync";
+import { LEADER_CATEGORIES } from "@/lib/sync";
 import { cn, decimal, integer, percent } from "@/lib/format";
 import { useAggregatedPlayers } from "@/hooks/useAggregatedPlayers";
 import { EmptyState } from "@/components/EmptyState";
@@ -9,6 +9,51 @@ import { Badge } from "@/components/ui";
 import { DownloadIcon } from "@/components/icons";
 
 type Mode = "avg" | "total";
+
+type PlayerCategory = {
+  key: string;
+  label: string;
+  stat: string;
+};
+
+const LOCAL_CATEGORIES: PlayerCategory[] = [
+  {
+    key: "tirs-2",
+    label: "Tirs de 2",
+    stat: "avgTwoPointFieldGoalsMade",
+  },
+  {
+    key: "tirs-lliures",
+    label: "Tirs lliures",
+    stat: "avgFreeThrowsMade",
+  },
+  {
+    key: "rebots-ofensius",
+    label: "Rebots ofensius",
+    stat: "avgOffensiveRebounds",
+  },
+  {
+    key: "rebots-defensius",
+    label: "Rebots defensius",
+    stat: "avgDefensiveRebounds",
+  },
+  {
+    key: "valoracio",
+    label: "Valoració",
+    stat: "avgValuation",
+  },
+];
+
+const PLAYER_CATEGORIES: PlayerCategory[] = [
+  ...LEADER_CATEGORIES.map(({ key, label, stat }) => ({ key, label, stat })),
+  ...LOCAL_CATEGORIES,
+];
+
+function playerCategory(key?: string | null): PlayerCategory {
+  return (
+    PLAYER_CATEGORIES.find((item) => item.key === key) ?? PLAYER_CATEGORIES[0]
+  );
+}
 
 type Column = {
   key: string;
@@ -113,7 +158,7 @@ const MODES: { key: Mode; label: string }[] = [
 
 export default function PlayersPage() {
   const [params] = useSearchParams();
-  const category = categoryByKey(params.get("ordre"));
+  const category = playerCategory(params.get("ordre"));
   const mode: Mode = params.get("mode") === "total" ? "total" : "avg";
   const { players, games, loading } = useAggregatedPlayers();
 
@@ -152,7 +197,7 @@ export default function PlayersPage() {
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          {LEADER_CATEGORIES.map((item) => (
+          {PLAYER_CATEGORIES.map((item) => (
             <Link
               key={item.key}
               to={`/jugadors?ordre=${item.key}${
@@ -215,20 +260,20 @@ export default function PlayersPage() {
       ) : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-white/10 bg-zinc-900/40">
-            <table className="w-full text-sm sm:min-w-[1380px]">
+            <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wider text-zinc-500">
-                  <th className="px-3 py-3 text-center font-medium">#</th>
+                <tr className="border-b border-white/10 text-left text-[10px] uppercase tracking-wider text-zinc-500">
+                  <th className="px-2 py-3 text-center font-medium">#</th>
                   <th className="px-2 py-3 font-medium">Jugador</th>
-                  <th className="hidden px-2 py-3 font-medium sm:table-cell">
+                  <th className="hidden px-2 py-3 font-medium xl:table-cell">
                     Equip
                   </th>
                   {COLUMNS.map((column) => (
                     <th
                       key={column.key}
                       className={cn(
-                        "px-2 py-3 text-center font-medium",
-                        column.key !== category.stat && "hidden sm:table-cell",
+                        "whitespace-nowrap px-1.5 py-3 text-center font-medium",
+                        column.key !== category.stat && "hidden lg:table-cell",
                       )}
                     >
                       {column.label}
@@ -242,26 +287,26 @@ export default function PlayersPage() {
                     key={player.id}
                     className="transition-colors hover:bg-white/[0.03]"
                   >
-                    <td className="px-3 py-2.5 text-center tabular-nums text-zinc-500">
+                    <td className="px-2 py-2.5 text-center tabular-nums text-zinc-500">
                       {index + 1}
                     </td>
                     <td className="px-2 py-2.5">
                       <Link
                         to={`/jugadors/${player.id}`}
-                        className="group flex items-center gap-3"
+                        className="group flex items-center gap-2"
                       >
-                        <TeamLogo team={player.team} size={30} />
+                        <TeamLogo team={player.team} size={28} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-zinc-200 group-hover:text-white">
                             {player.name}
                           </span>
-                          <span className="block text-[11px] text-zinc-500 sm:hidden">
+                          <span className="block text-[11px] text-zinc-500 xl:hidden">
                             {player.team.abbreviation}
                           </span>
                         </span>
                       </Link>
                     </td>
-                    <td className="hidden px-2 py-2.5 text-zinc-400 sm:table-cell">
+                    <td className="hidden px-2 py-2.5 text-zinc-400 xl:table-cell">
                       {player.team.abbreviation}
                     </td>
                     {COLUMNS.map((column) => {
@@ -273,10 +318,10 @@ export default function PlayersPage() {
                         <td
                           key={column.key}
                           className={cn(
-                            "px-2 py-2.5 text-center tabular-nums",
+                            "whitespace-nowrap px-1.5 py-2.5 text-center tabular-nums",
                             column.key === category.stat
                               ? "font-semibold text-orange-400"
-                              : "hidden text-zinc-300 sm:table-cell",
+                              : "hidden text-zinc-300 lg:table-cell",
                           )}
                         >
                           {column.format(player.stats[statKey], mode)}
@@ -289,9 +334,9 @@ export default function PlayersPage() {
             </table>
           </div>
 
-          <p className="mt-2 hidden text-[11px] text-zinc-600 sm:block lg:hidden">
-            Desplaça la taula horitzontalment per veure la resta
-            d&apos;estadístiques.
+          <p className="mt-2 text-[11px] text-zinc-600 lg:hidden">
+            A pantalles petites es mostra només la columna de la categoria
+            seleccionada; fes servir els filtres per canviar-la.
           </p>
 
           <p className="mt-4 text-xs leading-relaxed text-zinc-500">
