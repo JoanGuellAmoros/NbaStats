@@ -1,12 +1,17 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useEntry } from "@/hooks/useCache";
 import { KEY } from "@/lib/cache";
-import type { LeaderSnapshot } from "@/lib/types";
+import type {
+  LeaderPlayer,
+  LeaderSnapshot,
+  StandingsSnapshot,
+  Team,
+} from "@/lib/types";
 import { categoryByKey, LEADER_CATEGORIES } from "@/lib/sync";
 import { cn, decimal, integer, percent, timeAgo } from "@/lib/format";
 import { DataMissing } from "@/components/DataMissing";
 import { PageHeader } from "@/components/PageHeader";
-import { PlayerAvatar } from "@/components/PlayerAvatar";
+import { TeamLogo } from "@/components/TeamLogo";
 import { Badge } from "@/components/ui";
 
 const COLUMNS: {
@@ -35,6 +40,25 @@ export default function PlayersPage() {
   const { data, loading, fetchedAt } = useEntry<LeaderSnapshot>(
     KEY.leaders(category.key),
   );
+  const standingsState = useEntry<StandingsSnapshot>(KEY.standings);
+
+  const teams = new Map<string, Team>();
+  for (const standing of [
+    ...(standingsState.data?.east ?? []),
+    ...(standingsState.data?.west ?? []),
+  ]) {
+    teams.set(standing.team.id, standing.team);
+    teams.set(standing.team.abbreviation, standing.team);
+  }
+
+  const teamFor = (player: LeaderPlayer): Team =>
+    teams.get(player.teamId ?? "") ??
+    teams.get(player.teamAbbreviation ?? "") ?? {
+      id: player.teamId ?? "",
+      name: player.teamName ?? "Equip",
+      shortName: player.teamAbbreviation ?? "",
+      abbreviation: player.teamAbbreviation ?? "—",
+    };
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
@@ -110,7 +134,7 @@ export default function PlayersPage() {
                         to={`/jugadors/${player.id}`}
                         className="group flex items-center gap-3"
                       >
-                        <PlayerAvatar name={player.name} size={32} />
+                        <TeamLogo team={teamFor(player)} size={30} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-zinc-200 group-hover:text-white">
                             {player.name}

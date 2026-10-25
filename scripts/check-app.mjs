@@ -385,6 +385,14 @@ async function main() {
   await page.waitForTimeout(500);
   const leaderRows = await page.locator("table tbody tr").count();
   check(leaderRows === 50, "50 líders en punts", `${leaderRows} files`);
+  const playerTeamLogos = await page
+    .locator('table tbody img[src*="/teamlogos/"]')
+    .count();
+  check(
+    playerTeamLogos >= 45,
+    "logos d'equip a la llista de jugadors",
+    `${playerTeamLogos} logos`,
+  );
   await page.screenshot({ path: path.join(SHOTS, "07-players.png"), fullPage: true });
 
   // Fitxa de jugador (descàrrega manual)
