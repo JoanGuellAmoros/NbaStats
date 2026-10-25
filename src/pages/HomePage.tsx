@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useData } from "@/context/DataContext";
-import { useEntry } from "@/hooks/useCache";
+import { useDownloadedGameIds, useEntry } from "@/hooks/useCache";
 import { KEY } from "@/lib/cache";
 import type {
   GameDay,
@@ -64,6 +64,7 @@ export default function HomePage() {
   const today = todayIso();
   const standingsState = useEntry<StandingsSnapshot>(KEY.standings);
   const todayState = useEntry<GameDay>(KEY.scoreboard(today));
+  const downloadedGameIds = useDownloadedGameIds();
   const pointsState = useEntry<LeaderSnapshot>(KEY.leaders("punts"));
   const reboundsState = useEntry<LeaderSnapshot>(KEY.leaders("rebots"));
   const assistsState = useEntry<LeaderSnapshot>(KEY.leaders("assistencies"));
@@ -208,7 +209,11 @@ export default function HomePage() {
         ) : todayGames && todayGames.games.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {todayGames.games.slice(0, 6).map((game) => (
-              <GameCard key={game.id} game={game} />
+              <GameCard
+                key={game.id}
+                game={game}
+                hasDetail={downloadedGameIds.has(game.id)}
+              />
             ))}
           </div>
         ) : todayGames ? (

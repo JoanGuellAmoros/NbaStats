@@ -3,6 +3,7 @@ import {
   CACHE_EVENT,
   cacheSummary,
   findCachedGame,
+  listKeys,
   readEntry,
 } from "@/lib/cache";
 import type { CacheEntry, CacheSummary, Game } from "@/lib/types";
@@ -122,6 +123,43 @@ export function useCachedGame(gameId: string | null) {
     game: state.id === gameId ? state.game : null,
     loading: state.loading,
   };
+}
+
+const GAME_KEY_PREFIX = "snapshot:game:";
+
+export function useDownloadedGameIds(): Set<string> {
+  const [ids, setIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let alive = true;
+
+    const load = () => {
+      listKeys()
+        .then((keys) => {
+          if (!alive) return;
+          setIds(
+            new Set(
+              keys
+                .filter((key) => key.startsWith(GAME_KEY_PREFIX))
+                .map((key) => key.slice(GAME_KEY_PREFIX.length)),
+            ),
+          );
+        })
+        .catch(() => {
+          if (alive) setIds(new Set());
+        });
+    };
+
+    load();
+    window.addEventListener(CACHE_EVENT, load);
+
+    return () => {
+      alive = false;
+      window.removeEventListener(CACHE_EVENT, load);
+    };
+  }, []);
+
+  return ids;
 }
 
 const EMPTY_SUMMARY: CacheSummary = {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useData } from "@/context/DataContext";
-import { useEntry } from "@/hooks/useCache";
+import { useDownloadedGameIds, useEntry } from "@/hooks/useCache";
 import { KEY } from "@/lib/cache";
 import type { StandingsSnapshot, TeamDetail } from "@/lib/types";
 import {
@@ -31,6 +31,7 @@ export default function TeamPage() {
     teamId ? KEY.team(teamId) : null,
   );
   const standingsState = useEntry<StandingsSnapshot>(KEY.standings);
+  const downloadedGameIds = useDownloadedGameIds();
   const [busy, setBusy] = useState(false);
 
   const detail = detailState.data;
@@ -322,7 +323,11 @@ export default function TeamPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {played.map((game) => (
-                    <GameCard key={game.id} game={game} />
+                    <GameCard
+                      key={game.id}
+                      game={game}
+                      hasDetail={downloadedGameIds.has(game.id)}
+                    />
                   ))}
                 </div>
               )}
@@ -339,7 +344,11 @@ export default function TeamPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {next.map((game) => (
-                    <GameCard key={game.id} game={game} />
+                    <GameCard
+                      key={game.id}
+                      game={game}
+                      hasDetail={downloadedGameIds.has(game.id)}
+                    />
                   ))}
                 </div>
               )}

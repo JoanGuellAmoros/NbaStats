@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useData } from "@/context/DataContext";
-import { useEntry } from "@/hooks/useCache";
+import { useDownloadedGameIds, useEntry } from "@/hooks/useCache";
 import { KEY } from "@/lib/cache";
 import type { GameDay } from "@/lib/types";
 import {
@@ -34,6 +34,7 @@ export default function GamesPage() {
   const { entry, data, loading, fetchedAt } = useEntry<GameDay>(
     KEY.scoreboard(date),
   );
+  const downloadedGameIds = useDownloadedGameIds();
   const [busy, setBusy] = useState(false);
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(
     null,
@@ -141,7 +142,11 @@ export default function GamesPage() {
       ) : data && data.games.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.games.map((game) => (
-            <GameCard key={game.id} game={game} />
+            <GameCard
+              key={game.id}
+              game={game}
+              hasDetail={downloadedGameIds.has(game.id)}
+            />
           ))}
         </div>
       ) : entry ? (

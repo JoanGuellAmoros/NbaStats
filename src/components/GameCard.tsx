@@ -40,9 +40,17 @@ function Side({ side, showScore }: { side: GameSide; showScore: boolean }) {
   );
 }
 
-export function GameCard({ game }: { game: Game }) {
+export function GameCard({
+  game,
+  hasDetail,
+}: {
+  game: Game;
+  hasDetail?: boolean;
+}) {
   const isPre = game.state === "pre";
   const linkable = canViewGameDetail(game);
+  const showDetailStatus =
+    game.state === "post" && hasDetail !== undefined;
 
   const content = (
     <article
@@ -53,17 +61,39 @@ export function GameCard({ game }: { game: Game }) {
       )}
     >
       <div className="mb-3 flex items-center justify-between gap-3 text-xs">
-        <span
-          className={cn(
-            "font-semibold",
-            game.state === "in"
-              ? "text-orange-400"
-              : game.state === "post"
-                ? "text-zinc-400"
-                : "text-emerald-400",
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className={cn(
+              "font-semibold",
+              game.state === "in"
+                ? "text-orange-400"
+                : game.state === "post"
+                  ? "text-zinc-400"
+                  : "text-emerald-400",
+            )}
+          >
+            {game.statusLabel}
+          </span>
+          {showDetailStatus && (
+            <span
+              className={cn(
+                "size-2.5 shrink-0 rounded-full",
+                hasDetail ? "bg-emerald-400" : "bg-red-500",
+              )}
+              data-detail-status={hasDetail ? "ready" : "missing"}
+              role="img"
+              title={
+                hasDetail
+                  ? "Detalls del partit descarregats"
+                  : "Detalls del partit no descarregats"
+              }
+              aria-label={
+                hasDetail
+                  ? "Detalls del partit descarregats"
+                  : "Detalls del partit no descarregats"
+              }
+            />
           )}
-        >
-          {game.statusLabel}
         </span>
         <span className="truncate text-zinc-500">
           {isPre

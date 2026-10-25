@@ -104,6 +104,10 @@ La pantalla *Jugadors* no fa cap descàrrega: agrega els boxscores de tots els
 rebots, assistències, robatoris, taps i triples) i percentatges (TC% i 3P%). Els
 partits nous apareixen a la llista tan bon punt es descarreguen els seus detalls.
 
+A les targetes dels partits finals, un punt **verd** indica que els detalls ja
+són a la memòria i un de **vermell** que encara no s'han descarregat. L'indicador
+s'actualitza sol quan acaba una descàrrega.
+
 Cancel·lar una sincronització conserva les dades que ja hi havia. Si una
 petició falla, la resta continuen i els errors es mostren en un desplegable.
 

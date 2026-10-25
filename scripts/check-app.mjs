@@ -170,6 +170,10 @@ async function main() {
     (await page.getByText("Detalls no disponibles").count()) === gameCards,
     "cada targeta d'avui indica que no hi ha detalls",
   );
+  check(
+    (await page.locator("[data-detail-status]").count()) === 0,
+    "sense indicador de detalls als partits d'avui",
+  );
   await page.screenshot({ path: path.join(SHOTS, "06-games.png"), fullPage: true });
 
   // Ruta directa a un partit d'avui: bloquejada
@@ -332,6 +336,24 @@ async function main() {
     "les targetes del dia anterior enllacen al detall",
     `${pastLinks}/${pastCards} enllaços`,
   );
+  const readyBefore = await page.locator('[data-detail-status="ready"]').count();
+  const missingBefore = await page
+    .locator('[data-detail-status="missing"]')
+    .count();
+  check(
+    readyBefore + missingBefore === pastCards,
+    "cada partit final té l'indicador de detalls",
+    `${readyBefore + missingBefore}/${pastCards}`,
+  );
+  check(
+    missingBefore > 0,
+    "indicador vermell als partits sense detalls",
+    `${missingBefore} sense detalls`,
+  );
+  await page.screenshot({
+    path: path.join(SHOTS, "06-games-dots-before.png"),
+    fullPage: true,
+  });
 
   const bulkRequestsBefore = statsRequests.length;
   await page
@@ -348,6 +370,23 @@ async function main() {
       .then(() => "partial"),
   ]).catch(() => "timeout");
   check(bulkOutcome === "ok", "el botó massiu desa tots els detalls", bulkOutcome);
+  await page.waitForFunction(
+    (total) =>
+      document.querySelectorAll('[data-detail-status="ready"]').length ===
+      total,
+    pastCards,
+    { timeout: 15_000 },
+  );
+  const readyAfter = await page.locator('[data-detail-status="ready"]').count();
+  check(
+    readyAfter === pastCards,
+    "tots els indicadors passen a verd després de descarregar",
+    `${readyAfter}/${pastCards}`,
+  );
+  check(
+    (await page.locator('[data-detail-status="missing"]').count()) === 0,
+    "cap indicador vermell després de descarregar",
+  );
   check(
     statsRequests.length - bulkRequestsBefore >= pastCards,
     "el botó massiu fa una petició per partit",
