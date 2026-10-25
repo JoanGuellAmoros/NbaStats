@@ -1,4 +1,5 @@
 import type { GameDetail, Team } from "./types";
+import { valuation } from "./boxscore";
 
 export type AggregatedPlayer = {
   id: string;
@@ -21,9 +22,14 @@ type Totals = {
   assists: number;
   steals: number;
   blocks: number;
+  twoPointersMade: number;
+  threePointersMade: number;
+  freeThrowsMade: number;
+  offensiveRebounds: number;
+  defensiveRebounds: number;
+  valuation: number;
   fieldGoalsMade: number;
   fieldGoalsAttempted: number;
-  threePointersMade: number;
   threePointersAttempted: number;
   lastDate: number;
 };
@@ -87,6 +93,9 @@ export function aggregatePlayers(details: GameDetail[]): AggregatedLeaders {
             "threePointFieldGoalsMade-threePointFieldGoalsAttempted"
           ],
         );
+        const [ftm] = madeAttempted(
+          player.stats["freeThrowsMade-freeThrowsAttempted"],
+        );
 
         const entry = totals.get(id) ?? {
           player: {
@@ -102,9 +111,14 @@ export function aggregatePlayers(details: GameDetail[]): AggregatedLeaders {
           assists: 0,
           steals: 0,
           blocks: 0,
+          twoPointersMade: 0,
+          threePointersMade: 0,
+          freeThrowsMade: 0,
+          offensiveRebounds: 0,
+          defensiveRebounds: 0,
+          valuation: 0,
           fieldGoalsMade: 0,
           fieldGoalsAttempted: 0,
-          threePointersMade: 0,
           threePointersAttempted: 0,
           lastDate: 0,
         };
@@ -116,9 +130,14 @@ export function aggregatePlayers(details: GameDetail[]): AggregatedLeaders {
         entry.assists += number(player.stats.assists);
         entry.steals += number(player.stats.steals);
         entry.blocks += number(player.stats.blocks);
+        entry.twoPointersMade += fgm - tpm;
+        entry.threePointersMade += tpm;
+        entry.freeThrowsMade += ftm;
+        entry.offensiveRebounds += number(player.stats.offensiveRebounds);
+        entry.defensiveRebounds += number(player.stats.defensiveRebounds);
+        entry.valuation += valuation(player.stats);
         entry.fieldGoalsMade += fgm;
         entry.fieldGoalsAttempted += fga;
-        entry.threePointersMade += tpm;
         entry.threePointersAttempted += tpa;
 
         if (date >= entry.lastDate) {
@@ -145,9 +164,26 @@ export function aggregatePlayers(details: GameDetail[]): AggregatedLeaders {
         avgAssists: round(value.assists / played),
         avgSteals: round(value.steals / played),
         avgBlocks: round(value.blocks / played),
+        avgValuation: round(value.valuation / played),
+        avgTwoPointFieldGoalsMade: round(value.twoPointersMade / played),
         avgThreePointFieldGoalsMade: round(
           value.threePointersMade / played,
         ),
+        avgFreeThrowsMade: round(value.freeThrowsMade / played),
+        avgOffensiveRebounds: round(value.offensiveRebounds / played),
+        avgDefensiveRebounds: round(value.defensiveRebounds / played),
+        totalMinutes: round(value.minutes, 0),
+        totalPoints: value.points,
+        totalRebounds: value.rebounds,
+        totalAssists: value.assists,
+        totalSteals: value.steals,
+        totalBlocks: value.blocks,
+        totalValuation: value.valuation,
+        totalTwoPointFieldGoalsMade: value.twoPointersMade,
+        totalThreePointFieldGoalsMade: value.threePointersMade,
+        totalFreeThrowsMade: value.freeThrowsMade,
+        totalOffensiveRebounds: value.offensiveRebounds,
+        totalDefensiveRebounds: value.defensiveRebounds,
         fieldGoalPct: percentage(
           value.fieldGoalsMade,
           value.fieldGoalsAttempted,

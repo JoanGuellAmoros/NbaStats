@@ -488,6 +488,61 @@ async function main() {
   await page.waitForTimeout(500);
   const leaderRows = await page.locator("table tbody tr").count();
   check(leaderRows > 50, "tots els jugadors calculats dels boxscores", `${leaderRows} files`);
+  const playersTable = page.locator("table").first();
+  const playersHeaders = (
+    await playersTable.locator("thead th").allInnerTexts()
+  ).map((header) => header.trim());
+  for (const label of [
+    "VAL",
+    "2PM",
+    "3PM",
+    "TLM",
+    "RO",
+    "RD",
+    "ROB",
+    "TAP",
+    "TC%",
+    "3P%",
+  ]) {
+    check(
+      playersHeaders.includes(label),
+      `columna ${label} a la llista de jugadors`,
+    );
+  }
+  const pointsIndex = playersHeaders.indexOf("PTS");
+  const pointsCells = `tbody tr td:nth-child(${pointsIndex + 1})`;
+  const averagePoints = await playersTable.locator(pointsCells).allInnerTexts();
+  await page.getByRole("link", { name: "Totals", exact: true }).click();
+  await page.waitForTimeout(300);
+  const totalPoints = await playersTable.locator(pointsCells).allInnerTexts();
+  const totalMode = await page
+    .locator('[data-mode="total"]')
+    .getAttribute("aria-current");
+  check(totalMode === "page", "el botó de totals queda actiu");
+  check(
+    averagePoints.length > 0 &&
+      averagePoints.some((value, index) => value !== totalPoints[index]),
+    "el canvi a totals mostra els acumulats",
+    `${averagePoints[0]} → ${totalPoints[0]}`,
+  );
+  check(
+    totalPoints.every((value) => /^\d+$/.test(value.trim())),
+    "els totals es mostren com a enters",
+    totalPoints.slice(0, 3).join(", "),
+  );
+  check(
+    statsRequests.length === requestsBeforePlayers,
+    "alternar mitjanes i totals no fa cap petició a ESPN",
+    `${statsRequests.length - requestsBeforePlayers} peticions`,
+  );
+  await page.getByRole("link", { name: "Mitjanes", exact: true }).click();
+  await page.waitForTimeout(300);
+  const pointsBack = await playersTable.locator(pointsCells).allInnerTexts();
+  check(
+    pointsBack.join("|") === averagePoints.join("|"),
+    "el canvi a mitjanes recupera les mitjanes",
+    pointsBack[0],
+  );
   check(
     (await page.getByText(/boxscores de \d+ partits? descarregats?/).count()) > 0,
     "la pantalla indica que les dades són calculades",

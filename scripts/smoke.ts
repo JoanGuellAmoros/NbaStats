@@ -194,6 +194,68 @@ async function main() {
     "mitjana de punts calculada del boxscore",
   );
 
+  const aggregatedSample = aggregated.players.find(
+    (player) => player.name === sampleBoxPlayer?.name,
+  );
+  if (sampleBoxPlayer && aggregatedSample) {
+    const stats = sampleBoxPlayer.stats;
+    const [fgm, fga] = shooting(
+      stats["fieldGoalsMade-fieldGoalsAttempted"],
+    );
+    const [tpm, tpa] = shooting(
+      stats["threePointFieldGoalsMade-threePointFieldGoalsAttempted"],
+    );
+    const [ftm] = shooting(stats["freeThrowsMade-freeThrowsAttempted"]);
+    const num = (value?: string) => Number(value) || 0;
+    const expectedValuation = valuation(stats);
+
+    console.log("aggregated sample:", {
+      player: aggregatedSample.name,
+      avgValuation: aggregatedSample.stats.avgValuation,
+      avgTwoPointFieldGoalsMade:
+        aggregatedSample.stats.avgTwoPointFieldGoalsMade,
+      avgFreeThrowsMade: aggregatedSample.stats.avgFreeThrowsMade,
+      avgOffensiveRebounds:
+        aggregatedSample.stats.avgOffensiveRebounds,
+      avgDefensiveRebounds:
+        aggregatedSample.stats.avgDefensiveRebounds,
+      totalPoints: aggregatedSample.stats.totalPoints,
+    });
+
+    assert(
+      aggregatedSample.stats.avgValuation === expectedValuation,
+      "mitjana de valoració calculada del boxscore",
+    );
+    assert(
+      aggregatedSample.stats.avgTwoPointFieldGoalsMade === fgm - tpm,
+      "mitjana de tirs de 2 calculada del boxscore",
+    );
+    assert(
+      aggregatedSample.stats.avgFreeThrowsMade === ftm,
+      "mitjana de tirs lliures calculada del boxscore",
+    );
+    assert(
+      aggregatedSample.stats.avgOffensiveRebounds ===
+        num(stats.offensiveRebounds),
+      "mitjana de rebots ofensius calculada del boxscore",
+    );
+    assert(
+      aggregatedSample.stats.avgDefensiveRebounds ===
+        num(stats.defensiveRebounds),
+      "mitjana de rebots defensius calculada del boxscore",
+    );
+    assert(
+      aggregatedSample.stats.totalPoints === num(stats.points) &&
+        aggregatedSample.stats.totalValuation === expectedValuation &&
+        aggregatedSample.stats.totalFreeThrowsMade === ftm,
+      "totals acumulats calculats del boxscore",
+    );
+    assert(
+      fga >= 0 && tpa >= 0,
+      "intents de tir disponibles al boxscore",
+    );
+  }
+
   let allLeadersOk = true;
   for (const category of LEADER_CATEGORIES) {
     const leaders = await fetchLeaders(category);

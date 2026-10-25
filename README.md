@@ -100,10 +100,12 @@ un avís i no s'ofereix cap descàrrega. El dia del calendari es calcula amb la
 data NBA (zona horària `America/New_York`) del partit.
 
 La pantalla *Jugadors* no fa cap descàrrega: agrega els boxscores de tots els
-`snapshot:game:<id>` desats i en calcula partits jugats, mitjanes (minuts, punts,
-rebots, assistències, robatoris, taps i triples) i percentatges (TC% i 3P%) de
-tots els jugadors amb minuts. Els partits nous apareixen a la llista tan bon punt
-es descarreguen els seus detalls.
+`snapshot:game:<id>` desats i en calcula partits jugats, minuts, punts, rebots
+(totals, ofensius i defensius), assistències, robatoris, taps, tirs de 2,
+triples, tirs lliures, valoració i percentatges (TC% i 3P%) de tots els jugadors
+amb minuts. Un commutador permet veure les **mitjanes per partit** o els
+**totals acumulats** (els percentatges es calculen sempre amb els totals). Els
+partits nous apareixen a la llista tan bon punt es descarreguen els seus detalls.
 
 Al box score, la columna **2P** es calcula restant els triples dels tirs de camp
 (`FG − 3P`) i la columna **VAL** aplica la fórmula
