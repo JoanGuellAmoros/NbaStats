@@ -83,6 +83,7 @@ A més, hi ha descàrregues puntuals:
 
 - Un dia concret de partits, des de *Partits*.
 - Els detalls d'un partit, des de la seva pàgina.
+- Tots els detalls dels partits d'un dia, amb un sol botó des de *Partits*.
 - La fitxa d'un equip, des de la seva pàgina.
 - La fitxa d'un jugador, des de la seva pàgina.
 

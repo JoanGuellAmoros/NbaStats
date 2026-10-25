@@ -150,6 +150,54 @@ async function main() {
   check(gameCards > 0, "partits d'avui renderitzats", `${gameCards} partits`);
   await page.screenshot({ path: path.join(SHOTS, "06-games.png"), fullPage: true });
 
+  // Descàrrega massiva dels detalls del dia
+  const bulkRequestsBefore = statsRequests.length;
+  await page
+    .getByRole("button", { name: /Carrega tots els detalls/i })
+    .click();
+  const bulkOutcome = await Promise.race([
+    page
+      .getByText(/detalls de partit desats a la memòria/)
+      .waitFor({ timeout: 180_000 })
+      .then(() => "ok"),
+    page
+      .getByText(/S'han desat \d+ de \d+ detalls/)
+      .waitFor({ timeout: 180_000 })
+      .then(() => "partial"),
+  ]).catch(() => "timeout");
+  check(bulkOutcome === "ok", "el botó massiu desa tots els detalls", bulkOutcome);
+  check(
+    statsRequests.length - bulkRequestsBefore >= gameCards,
+    "el botó massiu fa una petició per partit",
+    `${statsRequests.length - bulkRequestsBefore} peticions`,
+  );
+
+  const bulkGameKeys = await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("nbastats");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction("cache", "readonly");
+    const store = tx.objectStore("cache");
+    const keys = await new Promise((resolve, reject) => {
+      const request = store.getAllKeys();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return keys.map(String).filter((key) => key.startsWith("snapshot:game:"));
+  });
+  check(
+    bulkGameKeys.length >= gameCards,
+    "detalls de tots els partits del dia a IndexedDB",
+    `${bulkGameKeys.length} detalls`,
+  );
+  await page.screenshot({
+    path: path.join(SHOTS, "06-games-bulk.png"),
+    fullPage: true,
+  });
+
   // Detall de partit (descàrrega manual)
   const completedGameId = await page.evaluate(async () => {
     const db = await new Promise((resolve, reject) => {

@@ -63,6 +63,10 @@ type DataContextValue = {
   downloadTeam: (teamId: string) => Promise<boolean>;
   downloadPlayer: (playerId: string) => Promise<boolean>;
   downloadGame: (gameId: string) => Promise<boolean>;
+  downloadGames: (
+    gameIds: string[],
+    onProgress?: (done: number, total: number) => void,
+  ) => Promise<void>;
   clearAll: () => Promise<void>;
   exportBackup: () => Promise<void>;
   importBackup: (file: File) => Promise<number>;
@@ -310,6 +314,66 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [online, notify],
   );
 
+  const downloadGames = useCallback(
+    async (
+      gameIds: string[],
+      onProgress?: (done: number, total: number) => void,
+    ) => {
+      const unique = [...new Set(gameIds.filter(Boolean))];
+      if (unique.length === 0) return;
+
+      if (!online) {
+        notify(
+          "Sense connexió no es poden descarregar dades noves.",
+          "error",
+        );
+        return;
+      }
+
+      let cursor = 0;
+      let done = 0;
+      let ok = 0;
+      const errors: string[] = [];
+      onProgress?.(0, unique.length);
+
+      const workers = Array.from(
+        { length: Math.min(4, unique.length) },
+        async () => {
+          while (true) {
+            const index = cursor;
+            cursor += 1;
+            if (index >= unique.length) return;
+
+            try {
+              await syncGame(unique[index]);
+              ok += 1;
+            } catch (error) {
+              errors.push(errorMessage(error));
+            }
+
+            done += 1;
+            onProgress?.(done, unique.length);
+          }
+        },
+      );
+
+      await Promise.all(workers);
+
+      if (errors.length > 0) {
+        notify(
+          `S'han desat ${ok} de ${unique.length} detalls. N'han fallat ${errors.length}.`,
+          "error",
+        );
+      } else {
+        notify(
+          `${ok} detalls de partit desats a la memòria.`,
+          "success",
+        );
+      }
+    },
+    [online, notify],
+  );
+
   const updateSettings = useCallback(async (next: Settings) => {
     setSettings(next);
     await persistSettings(next);
@@ -389,6 +453,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       downloadTeam,
       downloadPlayer,
       downloadGame,
+      downloadGames,
       clearAll,
       exportBackup,
       importBackup,
@@ -417,6 +482,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       downloadTeam,
       downloadPlayer,
       downloadGame,
+      downloadGames,
       clearAll,
       exportBackup,
       importBackup,

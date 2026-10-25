@@ -24,7 +24,7 @@ import { Spinner } from "@/components/ui";
 
 export default function GamesPage() {
   const [params] = useSearchParams();
-  const { downloadDay, online, openPanel } = useData();
+  const { downloadDay, downloadGames, online, openPanel } = useData();
 
   const today = todayIso();
   const requested = params.get("data");
@@ -34,6 +34,9 @@ export default function GamesPage() {
     KEY.scoreboard(date),
   );
   const [busy, setBusy] = useState(false);
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(
+    null,
+  );
 
   const previous = shiftIsoDate(date, -1);
   const next = shiftIsoDate(date, 1);
@@ -43,6 +46,21 @@ export default function GamesPage() {
     setBusy(true);
     await downloadDay(date);
     setBusy(false);
+  };
+
+  const handleDownloadAll = async () => {
+    if (!data || data.games.length === 0) return;
+
+    const gameIds = data.games.map((game) => game.id);
+    setBulk({ done: 0, total: gameIds.length });
+
+    try {
+      await downloadGames(gameIds, (done, total) => {
+        setBulk({ done, total });
+      });
+    } finally {
+      setBulk(null);
+    }
   };
 
   return (
@@ -79,17 +97,36 @@ export default function GamesPage() {
         }
       />
 
-      <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-        <span className="rounded-md bg-white/5 px-2 py-1 text-zinc-300">
-          {loading
-            ? "Carregant…"
-            : `${data?.games.length ?? 0} ${
-                (data?.games.length ?? 0) === 1 ? "partit" : "partits"
-              }`}
-        </span>
-        {isToday && <span>· jornada d&apos;avui</span>}
-        {fetchedAt && (
-          <span>· desat {timeAgo(fetchedAt)}</span>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+          <span className="rounded-md bg-white/5 px-2 py-1 text-zinc-300">
+            {loading
+              ? "Carregant…"
+              : `${data?.games.length ?? 0} ${
+                  (data?.games.length ?? 0) === 1 ? "partit" : "partits"
+                }`}
+          </span>
+          {isToday && <span>· jornada d&apos;avui</span>}
+          {fetchedAt && <span>· desat {timeAgo(fetchedAt)}</span>}
+        </div>
+
+        {data && data.games.length > 0 && (
+          <button
+            type="button"
+            className="btn-secondary w-full sm:w-auto"
+            onClick={handleDownloadAll}
+            disabled={bulk !== null || !online}
+            title="Descarrega el resum complet de cada partit d'aquest dia. Es fa una petició per partit."
+          >
+            {bulk ? (
+              <Spinner className="size-4" />
+            ) : (
+              <DownloadIcon className="size-4" />
+            )}
+            {bulk
+              ? `Descarregant ${bulk.done}/${bulk.total}…`
+              : "Carrega tots els detalls"}
+          </button>
         )}
       </div>
 
