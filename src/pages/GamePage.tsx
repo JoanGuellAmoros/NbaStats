@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types";
 import { cn, formatDateLong, formatTime, timeAgo } from "@/lib/format";
 import { canViewGameDetail } from "@/lib/games";
+import { BOX_COLUMNS, boxValue } from "@/lib/boxscore";
 import { EmptyState } from "@/components/EmptyState";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -395,13 +396,13 @@ function BoxScoreTable({
       </header>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-xs">
+        <table className="w-full min-w-[980px] text-xs">
           <thead>
             <tr className="border-b border-white/10 text-[10px] uppercase tracking-wider text-zinc-500">
               <th className="sticky left-0 z-10 bg-zinc-900 px-4 py-2.5 text-left font-medium">
                 Jugador
               </th>
-              {box.columns.map((column) => (
+              {BOX_COLUMNS.map((column) => (
                 <th
                   key={column.key}
                   className="px-2 py-2.5 text-right font-medium tabular-nums"
@@ -433,12 +434,17 @@ function BoxScoreTable({
                     )}
                   </div>
                 </td>
-                {box.columns.map((column) => (
+                {BOX_COLUMNS.map((column) => (
                   <td
                     key={column.key}
-                    className="px-2 py-2.5 text-right tabular-nums text-zinc-400"
+                    className={cn(
+                      "px-2 py-2.5 text-right tabular-nums",
+                      column.key === "valuation"
+                        ? "font-semibold text-orange-300"
+                        : "text-zinc-400",
+                    )}
                   >
-                    {player.stats[column.key] ?? "—"}
+                    {boxValue(player.stats, column.key)}
                   </td>
                 ))}
               </tr>
@@ -450,12 +456,12 @@ function BoxScoreTable({
                 <td className="sticky left-0 z-10 bg-zinc-900 px-4 py-2.5 text-white">
                   Total
                 </td>
-                {box.columns.map((column) => (
+                {BOX_COLUMNS.map((column) => (
                   <td
                     key={column.key}
                     className="px-2 py-2.5 text-right tabular-nums text-white"
                   >
-                    {box.totals?.[column.key] || "—"}
+                    {boxValue(box.totals, column.key)}
                   </td>
                 ))}
               </tr>

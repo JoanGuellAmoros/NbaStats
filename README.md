@@ -5,8 +5,8 @@ navegador (IndexedDB) i **només s'actualitzen quan tu prems el botó**. No hi h
 cap petició automàtica en obrir l'app, navegar-hi ni tornar a la finestra.
 
 - Partits i calendari diari
-- Detall de cada partit: parcials, estadístiques, líders i box score (només
-  partits de dies passats)
+- Detall de cada partit: parcials, estadístiques, líders i box score amb 2P i
+  valoració (VAL) calculats (només partits de dies passats)
 - Classificació per conferències
 - Equips amb plantilla i calendari (descàrrega sota demanda)
 - Jugadors amb estadístiques calculades a partir dels boxscores descarregats
@@ -101,8 +101,13 @@ data NBA (zona horària `America/New_York`) del partit.
 
 La pantalla *Jugadors* no fa cap descàrrega: agrega els boxscores de tots els
 `snapshot:game:<id>` desats i en calcula partits jugats, mitjanes (minuts, punts,
-rebots, assistències, robatoris, taps i triples) i percentatges (TC% i 3P%). Els
-partits nous apareixen a la llista tan bon punt es descarreguen els seus detalls.
+rebots, assistències, robatoris, taps i triples) i percentatges (TC% i 3P%) de
+tots els jugadors amb minuts. Els partits nous apareixen a la llista tan bon punt
+es descarreguen els seus detalls.
+
+Al box score, la columna **2P** es calcula restant els triples dels tirs de camp
+(`FG − 3P`) i la columna **VAL** aplica la fórmula
+`PTS + REB + AST + STL + BLK + 2PM − 2PA + 3PM − 3PA + FTM − FTA`.
 
 A les targetes dels partits finals, un punt **verd** indica que els detalls ja
 són a la memòria i un de **vermell** que encara no s'han descarregat. L'indicador

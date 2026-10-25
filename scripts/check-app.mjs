@@ -288,6 +288,41 @@ async function main() {
     const boxscoreTables = await page.locator("table").count();
     check(quarters === 1, "parcials per quart visibles");
     check(boxscoreTables >= 3, "box score visible", `${boxscoreTables} taules`);
+
+    const boxHeaders = (
+      await page.locator("table").last().locator("thead th").allInnerTexts()
+    ).map((header) => header.trim().toUpperCase());
+    const expectedHeaders = [
+      "JUGADOR",
+      "MIN",
+      "PTS",
+      "REB",
+      "AST",
+      "VAL",
+      "2P",
+      "3P",
+      "FT",
+      "OREB",
+      "DREB",
+      "STL",
+      "TO",
+      "BLK",
+      "PF",
+      "+/-",
+    ];
+    check(
+      JSON.stringify(boxHeaders) === JSON.stringify(expectedHeaders),
+      "columnes del box score en l'ordre demanat",
+      boxHeaders.join(","),
+    );
+
+    const firstBoxRow = page.locator("table").last().locator("tbody tr").first();
+    const valueCell = (await firstBoxRow.locator("td").nth(5).innerText()).trim();
+    const twoPointCell = (
+      await firstBoxRow.locator("td").nth(6).innerText()
+    ).trim();
+    check(/^-?\d+$/.test(valueCell), "columna VAL numèrica", valueCell);
+    check(/^\d+-\d+$/.test(twoPointCell), "columna 2P calculada", twoPointCell);
     check(
       (await page.getByRole("heading", { name: "Líders del partit" }).count()) > 0,
       "líders del partit visibles",
@@ -452,7 +487,7 @@ async function main() {
   await page.getByRole("link", { name: "Jugadors", exact: true }).click();
   await page.waitForTimeout(500);
   const leaderRows = await page.locator("table tbody tr").count();
-  check(leaderRows === 50, "50 líders calculats dels boxscores", `${leaderRows} files`);
+  check(leaderRows > 50, "tots els jugadors calculats dels boxscores", `${leaderRows} files`);
   check(
     (await page.getByText(/boxscores de \d+ partits? descarregats?/).count()) > 0,
     "la pantalla indica que les dades són calculades",

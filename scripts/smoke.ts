@@ -9,6 +9,12 @@ import {
 import { LEADER_CATEGORIES } from "../src/lib/sync";
 import { canViewGameDetail } from "../src/lib/games";
 import { aggregatePlayers } from "../src/lib/aggregate";
+import {
+  BOX_COLUMNS,
+  boxValue,
+  shooting,
+  valuation,
+} from "../src/lib/boxscore";
 import { shiftIsoDate, todayIso } from "../src/lib/format";
 
 function assert(condition: unknown, message: string): void {
@@ -102,6 +108,55 @@ async function main() {
   assert(boxPlayers.length > 10, "jugadors amb minuts al box score");
   assert(detail.leaders.length === 2, "líders dels dos equips");
   assert(Boolean(detail.game.venue ?? detail.venue), "pavelló del partit");
+
+  const sampleBoxPlayer = boxPlayers.find(
+    (player) => Number(player.stats.minutes ?? "0") > 0,
+  );
+  assert(Boolean(sampleBoxPlayer), "jugador amb minuts per provar el box score");
+  if (sampleBoxPlayer) {
+    const stats = sampleBoxPlayer.stats;
+    const [fgm, fga] = shooting(
+      stats["fieldGoalsMade-fieldGoalsAttempted"],
+    );
+    const [tpm, tpa] = shooting(
+      stats["threePointFieldGoalsMade-threePointFieldGoalsAttempted"],
+    );
+    const [ftm, fta] = shooting(
+      stats["freeThrowsMade-freeThrowsAttempted"],
+    );
+    const num = (value?: string) => Number(value) || 0;
+    const expectedValue =
+      num(stats.points) +
+      num(stats.rebounds) +
+      num(stats.assists) +
+      num(stats.steals) +
+      num(stats.blocks) +
+      (fgm - tpm) -
+      (fga - tpa) +
+      tpm -
+      tpa +
+      ftm -
+      fta;
+
+    console.log("box score sample:", {
+      player: sampleBoxPlayer.name,
+      twoPoints: boxValue(stats, "twoPoints"),
+      valuation: boxValue(stats, "valuation"),
+    });
+    assert(
+      BOX_COLUMNS.map((column) => column.label).join(",") ===
+        "MIN,PTS,REB,AST,VAL,2P,3P,FT,OREB,DREB,STL,TO,BLK,PF,+/-",
+      "ordre de columnes del box score",
+    );
+    assert(
+      boxValue(stats, "twoPoints") === `${fgm - tpm}-${fga - tpa}`,
+      "2P calculat com FG menys 3P",
+    );
+    assert(
+      valuation(stats) === expectedValue,
+      "valoració calculada amb la fórmula",
+    );
+  }
 
   const aggregated = aggregatePlayers([detail]);
   const boxPlayersPlayed = detail.boxscore

@@ -38,13 +38,11 @@ export default function PlayersPage() {
   const category = categoryByKey(params.get("ordre"));
   const { players, games, loading } = useAggregatedPlayers();
 
-  const ranked = [...players]
-    .sort(
-      (a, b) =>
-        (b.stats[category.stat] ?? -1) - (a.stats[category.stat] ?? -1) ||
-        a.name.localeCompare(b.name),
-    )
-    .slice(0, 50);
+  const ranked = [...players].sort(
+    (a, b) =>
+      (b.stats[category.stat] ?? -1) - (a.stats[category.stat] ?? -1) ||
+      a.name.localeCompare(b.name),
+  );
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
@@ -53,7 +51,7 @@ export default function PlayersPage() {
         title="Jugadors"
         description={
           games > 0
-            ? `Top 50 calculat amb els boxscores de ${games} ${
+            ? `Tots els jugadors amb minuts, calculats amb els boxscores de ${games} ${
                 games === 1 ? "partit descarregat" : "partits descarregats"
               }. Aquesta pantalla no fa cap descàrrega.`
             : "Les estadístiques es calculen amb els boxscores dels partits que hagis descarregat. Aquesta pantalla no fa cap descàrrega."
