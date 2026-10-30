@@ -13,6 +13,7 @@ import TeamsPage from "@/pages/TeamsPage";
 import TeamPage from "@/pages/TeamPage";
 import PlayersPage from "@/pages/PlayersPage";
 import PlayerPage from "@/pages/PlayerPage";
+import RecordsPage from "@/pages/RecordsPage";
 import DataPage from "@/pages/DataPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/equips/:id" element={<TeamPage />} />
             <Route path="/jugadors" element={<PlayersPage />} />
             <Route path="/jugadors/:id" element={<PlayerPage />} />
+            <Route path="/records" element={<RecordsPage />} />
             <Route path="/dades" element={<DataPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

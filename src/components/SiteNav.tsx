@@ -7,6 +7,7 @@ const LINKS = [
   { to: "/classificacio", label: "Classificació" },
   { to: "/equips", label: "Equips" },
   { to: "/jugadors", label: "Jugadors" },
+  { to: "/records", label: "Rècords" },
   { to: "/dades", label: "Dades" },
 ];
 

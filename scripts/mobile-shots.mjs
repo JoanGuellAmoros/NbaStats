@@ -85,6 +85,11 @@ await page.getByRole("heading", { name: "Mitjanes de la temporada" }).waitFor({ 
 await page.waitForTimeout(500);
 await page.screenshot({ path: path.join(SHOTS, "m08-player.png"), fullPage: true });
 
+await page.getByRole("link", { name: "Rècords", exact: true }).click();
+await page.getByRole("heading", { name: "Rècords" }).waitFor({ timeout: 15_000 });
+await page.waitForTimeout(500);
+await page.screenshot({ path: path.join(SHOTS, "m08b-records.png"), fullPage: true });
+
 await page.getByRole("link", { name: "Dades", exact: true }).first().click();
 await page.waitForTimeout(500);
 await page.screenshot({ path: path.join(SHOTS, "m09-data.png"), fullPage: true });

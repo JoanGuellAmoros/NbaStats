@@ -82,6 +82,13 @@ await page
 await page.waitForTimeout(600);
 await audit("Detall de partit");
 
+// Rècords (amb el boxscore descarregat)
+await page.evaluate(() => {
+  window.location.hash = "#/records";
+});
+await page.getByRole("heading", { name: "Rècords" }).waitFor({ timeout: 15_000 });
+await audit("Rècords");
+
 // Team detail
 await page.evaluate(() => {
   window.location.hash = "#/equips";

@@ -10,6 +10,8 @@ cap petició automàtica en obrir l'app, navegar-hi ni tornar a la finestra.
 - Classificació per conferències
 - Equips amb plantilla i calendari (descàrrega sota demanda)
 - Jugadors amb estadístiques calculades a partir dels boxscores descarregats
+- Rècords: top 5 per estadística individual i d'equip, amb tots els empatats
+  (calculats localment amb els boxscores descarregats)
 - PWA instal·lable, amb app shell i logos d'equip a la cache del navegador
 
 Interfície en català. Les dades provenen de les APIs JSON públiques d'ESPN
@@ -109,6 +111,16 @@ percentatges es calculen sempre amb els totals). La taula mostra totes les
 columnes sense desplaçament horitzontal en pantalles d'escriptori; a mòbil es
 mostra la columna de la categoria seleccionada. Els partits nous apareixen a la
 llista tan bon punt es descarreguen els seus detalls.
+
+La pantalla *Rècords* també es calcula localment amb els `snapshot:game:<id>`:
+mostra el **top 5** de punts, rebots, assistències, valoració, tirs de camp,
+tirs de 2, triples, tirs lliures, rebots ofensius i defensius, robatoris, taps,
+pèrdues, faltes, plus/minus i minuts dels jugadors, i també rècords d'equip
+(punts, marge de victòria, rebots, assistències, robatoris i taps). Cada
+estadística és una secció de targetes amb el **millor registre destacat** i, a
+cada targeta, el jugador o equip, el partit (equip, rival, resultat i data) i el
+valor. Si hi ha empat, es mostren **totes** les entrades amb el mateix registre
+i el rang s'indica amb `=`. En clicar una targeta s'obre el detall del partit.
 
 Al box score, la columna **2P** es calcula restant els triples dels tirs de camp
 (`FG − 3P`) i la columna **VAL** aplica la fórmula

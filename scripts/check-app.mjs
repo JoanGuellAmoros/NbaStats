@@ -638,6 +638,93 @@ async function main() {
   check(avgTiles >= 10, "fitxa de jugador amb mitjanes", `${avgTiles} mètriques`);
   await page.screenshot({ path: path.join(SHOTS, "08-player.png"), fullPage: true });
 
+  // Rècords (calculats dels boxscores, sense descàrregues)
+  const requestsBeforeRecords = statsRequests.length;
+  await page.getByRole("link", { name: "Rècords", exact: true }).click();
+  await page.getByRole("heading", { name: "Rècords" }).waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(500);
+  const recordCategories = await page
+    .locator('[data-record-scope="player"]')
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-record-category")),
+    );
+  check(
+    recordCategories.join(",") ===
+      "points,rebounds,assists,valuation,fieldGoalsMade,twoPointersMade,threePointersMade,freeThrowsMade,offensiveRebounds,defensiveRebounds,steals,blocks,turnovers,fouls,plusMinus,minutes",
+    "16 categories de rècords individuals",
+    recordCategories.join(","),
+  );
+  const teamRecordCategories = await page
+    .locator('[data-record-scope="team"]')
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-record-category")),
+    );
+  check(
+    teamRecordCategories.join(",") ===
+      "teamPoints,winMargin,teamRebounds,teamAssists,teamSteals,teamBlocks",
+    "6 categories de rècords d'equip",
+    teamRecordCategories.join(","),
+  );
+  const recordCards = await page
+    .locator('[data-record-scope="player"] [data-record-rank]')
+    .count();
+  check(
+    recordCards >= 80,
+    "top 5 de cada estadística individual (amb empatats)",
+    `${recordCards} targetes`,
+  );
+  const teamRecordCards = await page
+    .locator('[data-record-scope="team"] [data-record-rank]')
+    .count();
+  check(
+    teamRecordCards >= 30,
+    "top 5 de cada estadística d'equip (amb empatats)",
+    `${teamRecordCards} targetes`,
+  );
+  check(
+    (await page.locator('[data-featured="true"]').count()) >= 1,
+    "el top 1 de cada estadística està destacat",
+  );
+  const tiedFlags = await page
+    .locator("[data-record-tied]")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-record-tied")),
+    );
+  check(
+    tiedFlags.every((flag) => flag === "true" || flag === "false"),
+    "els empatats es marquen a les targetes",
+    `${tiedFlags.filter((flag) => flag === "true").length} empatats`,
+  );
+  const recordPoints = page.locator('[data-record-category="points"]');
+  const recordValues = await recordPoints
+    .locator("[data-record-value]")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => Number(node.getAttribute("data-record-value"))),
+    );
+  check(
+    recordValues.length === 5 &&
+      recordValues.every(
+        (value, index) => index === 0 || recordValues[index - 1] >= value,
+      ),
+    "top 5 de punts ordenat",
+    recordValues.join(" ≥ "),
+  );
+  const recordHref = await recordPoints
+    .locator("[data-record-rank]")
+    .first()
+    .getAttribute("href");
+  check(
+    /^#\/partits\/\d+/.test(recordHref ?? ""),
+    "la targeta del rècord enllaça al partit",
+    recordHref ?? "",
+  );
+  check(
+    statsRequests.length === requestsBeforeRecords,
+    "la pantalla de rècords no fa cap petició a ESPN",
+    `${statsRequests.length - requestsBeforeRecords} peticions`,
+  );
+  await page.screenshot({ path: path.join(SHOTS, "07b-records.png"), fullPage: true });
+
   // Fitxa d'equip (descàrrega manual)
   await page.getByRole("link", { name: "Equips", exact: true }).click();
   await page.waitForTimeout(500);
