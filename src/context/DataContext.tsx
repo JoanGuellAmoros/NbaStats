@@ -18,10 +18,17 @@ import {
   getSettings,
   getStorageInfo,
   importCache,
+  readAllGameDetails,
   requestPersistence as requestPersistentStorage,
   saveSettings as persistSettings,
 } from "@/lib/cache";
 import { errorMessage, todayIso } from "@/lib/format";
+import {
+  computeRecords,
+  findRecordBreaks,
+  type RecordBreak,
+  type RecordsResult,
+} from "@/lib/records";
 import {
   downloadDay as syncDay,
   downloadGame as syncGame,
@@ -76,6 +83,8 @@ type DataContextValue = {
   requestPersistence: () => Promise<void>;
   toasts: Toast[];
   dismissToast: (id: number) => void;
+  recordBreaks: RecordBreak[];
+  dismissRecordBreaks: () => void;
   notify: (message: string, tone?: ToastTone) => void;
 };
 
@@ -94,6 +103,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [storage, setStorage] = useState<StorageInfo | null>(null);
   const [entryCount, setEntryCount] = useState(0);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [recordBreaks, setRecordBreaks] = useState<RecordBreak[]>([]);
 
   const controllerRef = useRef<AbortController | null>(null);
   const toastIdRef = useRef(0);
@@ -110,6 +120,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const dismissToast = useCallback((id: number) => {
     setToasts((previous) => previous.filter((toast) => toast.id !== id));
   }, []);
+
+  const dismissRecordBreaks = useCallback(() => setRecordBreaks([]), []);
+
+  const captureRecords = useCallback(async (): Promise<RecordsResult | null> => {
+    try {
+      return computeRecords(await readAllGameDetails());
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const announceRecordBreaks = useCallback(
+    async (before: RecordsResult | null, gameIds: string[]) => {
+      if (!before || gameIds.length === 0) return;
+
+      try {
+        const after = computeRecords(await readAllGameDetails());
+        const breaks = findRecordBreaks(before, after, gameIds);
+        if (breaks.length > 0) setRecordBreaks(breaks);
+      } catch {
+        // Els rècords són un extra: si fallen, la descàrrega segueix sent vàlida.
+      }
+    },
+    [],
+  );
 
   const refreshMeta = useCallback(async () => {
     const [lastSync, count, storageInfo] = await Promise.all([
@@ -303,15 +338,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        const before = await captureRecords();
         await syncGame(gameId);
         notify("Detalls del partit desats a la memòria.", "success");
+        await announceRecordBreaks(before, [gameId]);
         return true;
       } catch (error) {
         notify(errorMessage(error), "error");
         return false;
       }
     },
-    [online, notify],
+    [online, notify, captureRecords, announceRecordBreaks],
   );
 
   const downloadGames = useCallback(
@@ -334,6 +371,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       let done = 0;
       let ok = 0;
       const errors: string[] = [];
+      const before = await captureRecords();
       onProgress?.(0, unique.length);
 
       const workers = Array.from(
@@ -370,8 +408,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           "success",
         );
       }
+
+      if (ok > 0) await announceRecordBreaks(before, unique);
     },
-    [online, notify],
+    [online, notify, captureRecords, announceRecordBreaks],
   );
 
   const updateSettings = useCallback(async (next: Settings) => {
@@ -463,6 +503,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       requestPersistence,
       toasts,
       dismissToast,
+      recordBreaks,
+      dismissRecordBreaks,
       notify,
     }),
     [
@@ -492,6 +534,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       requestPersistence,
       toasts,
       dismissToast,
+      recordBreaks,
+      dismissRecordBreaks,
       notify,
     ],
   );

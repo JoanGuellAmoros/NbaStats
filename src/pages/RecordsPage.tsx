@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import type {
   RankedRecordEntry,
   RecordCategory,
-  RecordMetric,
   TeamRecordCategory,
 } from "@/lib/records";
-import { decimal, formatDateShort, integer } from "@/lib/format";
+import { recordValue } from "@/lib/records";
+import { formatDateShort } from "@/lib/format";
 import { useRecords } from "@/hooks/useRecords";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -14,15 +14,6 @@ import { Badge } from "@/components/ui";
 import { BasketballIcon } from "@/components/icons";
 
 type AnyCategory = RecordCategory | TeamRecordCategory;
-
-function valueLabel(metric: RecordMetric, value: number): string {
-  if (metric.format === "minutes") return decimal(value, 1);
-  if (metric.format === "signed") {
-    if (value === 0) return "0";
-    return `${value > 0 ? "+" : "−"}${integer(Math.abs(value))}`;
-  }
-  return integer(value);
-}
 
 function scoreLine(entry: RankedRecordEntry): string {
   return `${entry.team.abbreviation} ${entry.teamScore}–${entry.opponentScore} ${entry.opponent.abbreviation}`;
@@ -41,7 +32,7 @@ function RecordCard({
   entry: RankedRecordEntry;
   featured?: boolean;
 }) {
-  const value = valueLabel(category, entry.value);
+  const value = recordValue(category, entry.value);
   const label = `${entry.name}, ${value} ${category.short}, ${scoreLine(entry)}, ${formatDateShort(entry.date)}${entry.tied ? " (empatat)" : ""}`;
 
   if (featured) {

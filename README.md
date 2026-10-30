@@ -115,12 +115,15 @@ llista tan bon punt es descarreguen els seus detalls.
 La pantalla *Rècords* també es calcula localment amb els `snapshot:game:<id>`:
 mostra el **top 5** de punts, rebots, assistències, valoració, tirs de camp,
 tirs de 2, triples, tirs lliures, rebots ofensius i defensius, robatoris, taps,
-pèrdues, faltes, plus/minus i minuts dels jugadors, i també rècords d'equip
+pèrdues, plus/minus i minuts dels jugadors, i també rècords d'equip
 (punts, marge de victòria, rebots, assistències, robatoris i taps). Cada
 estadística és una secció de targetes amb el **millor registre destacat** i, a
 cada targeta, el jugador o equip, el partit (equip, rival, resultat i data) i el
 valor. Si hi ha empat, es mostren **totes** les entrades amb el mateix registre
-i el rang s'indica amb `=`. En clicar una targeta s'obre el detall del partit.
+i el rang s'indica amb `=`. En clicar una targeta s'obre el detall del partit. Quan descarregues els detalls
+d'un dia (botó *Carrega tots els detalls* o la descàrrega d'un partit), si algun
+registre supera el màxim que ja tenies desat apareix un avís amb el jugador o
+equip i el rècord superat.
 
 Al box score, la columna **2P** es calcula restant els triples dels tirs de camp
 (`FG − 3P`) i la columna **VAL** aplica la fórmula

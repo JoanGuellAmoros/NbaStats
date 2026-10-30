@@ -428,6 +428,24 @@ async function main() {
     `${statsRequests.length - bulkRequestsBefore} peticions`,
   );
 
+  const recordNotice = page.locator("[data-record-notice]");
+  const noticeAppeared = await recordNotice
+    .waitFor({ timeout: 8_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (noticeAppeared) {
+    const breakCount = await page.locator("[data-record-break]").count();
+    check(
+      breakCount > 0,
+      "l'avís de rècords mostra de qui i quin rècord s'ha superat",
+      `${breakCount} rècords`,
+    );
+    await page
+      .getByRole("button", { name: /Tanca l'avís de rècords/i })
+      .click();
+    await recordNotice.waitFor({ state: "detached", timeout: 5_000 });
+  }
+
   const bulkGameKeys = await page.evaluate(async () => {
     const db = await new Promise((resolve, reject) => {
       const request = indexedDB.open("nbastats");
@@ -650,8 +668,8 @@ async function main() {
     );
   check(
     recordCategories.join(",") ===
-      "points,rebounds,assists,valuation,fieldGoalsMade,twoPointersMade,threePointersMade,freeThrowsMade,offensiveRebounds,defensiveRebounds,steals,blocks,turnovers,fouls,plusMinus,minutes",
-    "16 categories de rècords individuals",
+      "points,rebounds,assists,valuation,fieldGoalsMade,twoPointersMade,threePointersMade,freeThrowsMade,offensiveRebounds,defensiveRebounds,steals,blocks,turnovers,plusMinus,minutes",
+    "15 categories de rècords individuals",
     recordCategories.join(","),
   );
   const teamRecordCategories = await page
@@ -669,7 +687,7 @@ async function main() {
     .locator('[data-record-scope="player"] [data-record-rank]')
     .count();
   check(
-    recordCards >= 80,
+    recordCards >= 75,
     "top 5 de cada estadística individual (amb empatats)",
     `${recordCards} targetes`,
   );
@@ -702,11 +720,11 @@ async function main() {
       nodes.map((node) => Number(node.getAttribute("data-record-value"))),
     );
   check(
-    recordValues.length === 5 &&
+    recordValues.length >= 5 &&
       recordValues.every(
         (value, index) => index === 0 || recordValues[index - 1] >= value,
       ),
-    "top 5 de punts ordenat",
+    "top 5 de punts ordenat (amb empatats)",
     recordValues.join(" ≥ "),
   );
   const recordHref = await recordPoints

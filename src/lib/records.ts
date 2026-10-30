@@ -1,5 +1,6 @@
 import type { GameDetail, GameSide, Team } from "./types";
 import { shooting, valuation } from "./boxscore";
+import { decimal, integer } from "./format";
 
 export type RecordMetricKey =
   | "points"
@@ -15,7 +16,6 @@ export type RecordMetricKey =
   | "steals"
   | "blocks"
   | "turnovers"
-  | "fouls"
   | "plusMinus"
   | "minutes";
 
@@ -71,6 +71,20 @@ export type RecordsResult = {
   teams: number;
 };
 
+export type RecordBreak = {
+  scope: "player" | "team";
+  categoryKey: string;
+  label: string;
+  short: string;
+  format: RecordValueFormat;
+  name: string;
+  team: Team;
+  value: number;
+  previous: number;
+  gameId: string;
+  date: string;
+};
+
 const FG_KEY = "fieldGoalsMade-fieldGoalsAttempted";
 const THREE_KEY =
   "threePointFieldGoalsMade-threePointFieldGoalsAttempted";
@@ -102,7 +116,6 @@ export const RECORD_METRICS: RecordMetric<RecordMetricKey>[] = [
   { key: "steals", label: "Robatoris", short: "ROB", format: "integer" },
   { key: "blocks", label: "Taps", short: "TAP", format: "integer" },
   { key: "turnovers", label: "Pèrdues", short: "PÉR", format: "integer" },
-  { key: "fouls", label: "Faltes personals", short: "FP", format: "integer" },
   { key: "plusMinus", label: "Plus/minus", short: "+/−", format: "signed" },
   { key: "minutes", label: "Minuts jugats", short: "MIN", format: "minutes" },
 ];
@@ -182,7 +195,6 @@ function playerLine(stats: Record<string, string>): PlayerLine {
     steals: number(stats.steals),
     blocks: number(stats.blocks),
     turnovers: number(stats.turnovers),
-    fouls: number(stats.fouls),
     plusMinus: number(stats.plusMinus),
     minutes: playedMinutes(stats.minutes),
   };
@@ -352,4 +364,74 @@ export function computeRecords(details: GameDetail[]): RecordsResult {
     players: players.size,
     teams: teams.size,
   };
+}
+
+export function recordValue(
+  metric: Pick<RecordMetric, "format">,
+  value: number,
+): string {
+  if (metric.format === "minutes") return decimal(value, 1);
+  if (metric.format === "signed") {
+    if (value === 0) return "0";
+    return `${value > 0 ? "+" : "−"}${integer(Math.abs(value))}`;
+  }
+  return integer(value);
+}
+
+/**
+ * Retorna els rècords vigents després d'una descàrrega que hagin millorat el
+ * màxim anterior. Només es tenen en compte els líders actuals (rang 1, amb
+ * tots els empatats) i els partits acabats de descarregar.
+ */
+export function findRecordBreaks(
+  previous: RecordsResult,
+  next: RecordsResult,
+  gameIds: Iterable<string>,
+): RecordBreak[] {
+  const downloaded = new Set(gameIds);
+  const result: RecordBreak[] = [];
+
+  const collect = (
+    previousCategories: (RecordCategory | TeamRecordCategory)[],
+    nextCategories: (RecordCategory | TeamRecordCategory)[],
+    scope: RecordBreak["scope"],
+  ) => {
+    const before = new Map(
+      previousCategories.map((category) => [
+        category.key,
+        category.entries[0]?.value ?? null,
+      ]),
+    );
+
+    for (const category of nextCategories) {
+      const previousBest = before.get(category.key) ?? null;
+
+      for (const entry of category.entries) {
+        if (entry.rank !== 1) continue;
+        if (!downloaded.has(entry.gameId)) continue;
+        // Sense un màxim anterior no es pot "superar" res: el primer registre
+        // d'una categoria no genera avís.
+        if (previousBest === null || entry.value <= previousBest) continue;
+
+        result.push({
+          scope,
+          categoryKey: category.key,
+          label: category.label,
+          short: category.short,
+          format: category.format,
+          name: entry.name,
+          team: entry.team,
+          value: entry.value,
+          previous: previousBest,
+          gameId: entry.gameId,
+          date: entry.date,
+        });
+      }
+    }
+  };
+
+  collect(previous.categories, next.categories, "player");
+  collect(previous.teamCategories, next.teamCategories, "team");
+
+  return result;
 }

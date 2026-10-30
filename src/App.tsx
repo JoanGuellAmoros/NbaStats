@@ -4,6 +4,7 @@ import { DataProvider } from "@/context/DataContext";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SyncPanel } from "@/components/SyncPanel";
+import { RecordNotice } from "@/components/RecordNotice";
 import { Toasts } from "@/components/Toasts";
 import HomePage from "@/pages/HomePage";
 import GamesPage from "@/pages/GamesPage";
@@ -58,6 +59,7 @@ export default function App() {
           </Routes>
         </Shell>
         <SyncPanel />
+        <RecordNotice />
         <Toasts />
       </DataProvider>
     </HashRouter>
