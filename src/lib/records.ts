@@ -81,6 +81,7 @@ export type RecordBreak = {
   team: Team;
   value: number;
   previous: number;
+  equalled: boolean;
   gameId: string;
   date: string;
 };
@@ -409,9 +410,12 @@ export function findRecordBreaks(
       for (const entry of category.entries) {
         if (entry.rank !== 1) continue;
         if (!downloaded.has(entry.gameId)) continue;
-        // Sense un màxim anterior no es pot "superar" res: el primer registre
-        // d'una categoria no genera avís.
-        if (previousBest === null || entry.value <= previousBest) continue;
+        // Sense un màxim anterior no es pot "superar" ni "igualar" res: el
+        // primer registre d'una categoria no genera avís.
+        if (previousBest === null) continue;
+
+        const equalled = Math.abs(entry.value - previousBest) < 1e-9;
+        if (!equalled && entry.value < previousBest) continue;
 
         result.push({
           scope,
@@ -423,6 +427,7 @@ export function findRecordBreaks(
           team: entry.team,
           value: entry.value,
           previous: previousBest,
+          equalled,
           gameId: entry.gameId,
           date: entry.date,
         });

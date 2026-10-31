@@ -124,8 +124,8 @@ cada targeta, el jugador o equip, el partit (equip, rival, resultat i data) i el
 valor. Si hi ha empat, es mostren **totes** les entrades amb el mateix registre
 i el rang s'indica amb `=`. En clicar una targeta s'obre el detall del partit. Quan descarregues els detalls
 d'un dia (botó *Carrega tots els detalls* o la descàrrega d'un partit), si algun
-registre supera el màxim que ja tenies desat apareix un avís amb el jugador o
-equip i el rècord superat.
+registre supera o iguala el màxim que ja tenies desat apareix un avís amb el
+jugador o equip i el rècord batut o igualat.
 
 Al box score, la columna **2P** es calcula restant els triples dels tirs de camp
 (`FG − 3P`) i la columna **VAL** aplica la fórmula

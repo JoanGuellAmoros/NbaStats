@@ -27,7 +27,6 @@ import {
   computeRecords,
   findRecordBreaks,
   type RecordBreak,
-  type RecordsResult,
 } from "@/lib/records";
 import {
   downloadDay as syncDay,
@@ -123,28 +122,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const dismissRecordBreaks = useCallback(() => setRecordBreaks([]), []);
 
-  const captureRecords = useCallback(async (): Promise<RecordsResult | null> => {
+  const announceRecordBreaks = useCallback(async (gameIds: string[]) => {
+    if (gameIds.length === 0) return;
+
     try {
-      return computeRecords(await readAllGameDetails());
+      const details = await readAllGameDetails();
+      const downloaded = new Set(gameIds);
+      // El màxim anterior es calcula sense els partits que acaben de baixar:
+      // així també s'avisa si el rècord ja era al cache d'una descàrrega
+      // anterior (per exemple, si l'app encara no tenia aquest avís).
+      const before = computeRecords(
+        details.filter((detail) => !downloaded.has(detail.game.id)),
+      );
+      if (before.categories.length === 0 && before.teamCategories.length === 0) {
+        return;
+      }
+
+      const after = computeRecords(details);
+      const breaks = findRecordBreaks(before, after, downloaded);
+      if (breaks.length > 0) setRecordBreaks(breaks);
     } catch {
-      return null;
+      // Els rècords són un extra: si fallen, la descàrrega segueix sent vàlida.
     }
   }, []);
-
-  const announceRecordBreaks = useCallback(
-    async (before: RecordsResult | null, gameIds: string[]) => {
-      if (!before || gameIds.length === 0) return;
-
-      try {
-        const after = computeRecords(await readAllGameDetails());
-        const breaks = findRecordBreaks(before, after, gameIds);
-        if (breaks.length > 0) setRecordBreaks(breaks);
-      } catch {
-        // Els rècords són un extra: si fallen, la descàrrega segueix sent vàlida.
-      }
-    },
-    [],
-  );
 
   const refreshMeta = useCallback(async () => {
     const [lastSync, count, storageInfo] = await Promise.all([
@@ -338,17 +338,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const before = await captureRecords();
         await syncGame(gameId);
         notify("Detalls del partit desats a la memòria.", "success");
-        await announceRecordBreaks(before, [gameId]);
+        await announceRecordBreaks([gameId]);
         return true;
       } catch (error) {
         notify(errorMessage(error), "error");
         return false;
       }
     },
-    [online, notify, captureRecords, announceRecordBreaks],
+    [online, notify, announceRecordBreaks],
   );
 
   const downloadGames = useCallback(
@@ -371,7 +370,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       let done = 0;
       let ok = 0;
       const errors: string[] = [];
-      const before = await captureRecords();
       onProgress?.(0, unique.length);
 
       const workers = Array.from(
@@ -409,9 +407,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      if (ok > 0) await announceRecordBreaks(before, unique);
+      if (ok > 0) await announceRecordBreaks(unique);
     },
-    [online, notify, captureRecords, announceRecordBreaks],
+    [online, notify, announceRecordBreaks],
   );
 
   const updateSettings = useCallback(async (next: Settings) => {

@@ -30,8 +30,14 @@ export function RecordNotice() {
 
   const title =
     recordBreaks.length === 1
-      ? "Rècord superat!"
-      : `${recordBreaks.length} rècords superats!`;
+      ? recordBreaks[0].equalled
+        ? "Rècord igualat!"
+        : "Rècord superat!"
+      : `${recordBreaks.length} rècords ${
+          recordBreaks.some((entry) => !entry.equalled)
+            ? "batuts"
+            : "igualats"
+        }!`;
 
   return (
     <div
@@ -64,7 +70,7 @@ export function RecordNotice() {
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-zinc-500">
                 Amb els boxscores que acabes de descarregar s&apos;ha millorat
-                el millor registre que tenies desat.
+                o igualat el millor registre que tenies desat.
               </p>
             </div>
           </div>
@@ -79,7 +85,10 @@ export function RecordNotice() {
         </header>
 
         <ul className="space-y-2.5">
-          {recordBreaks.map((entry) => (
+          {recordBreaks.map((entry) => {
+            const verb = entry.equalled ? "ha igualat" : "ha superat";
+
+            return (
             <li
               key={`${entry.scope}:${entry.categoryKey}:${entry.gameId}:${entry.name}`}
               data-record-break={entry.categoryKey}
@@ -104,14 +113,14 @@ export function RecordNotice() {
                         <span className="font-semibold text-white">
                           {entry.name}
                         </span>{" "}
-                        ha superat el rècord de {entry.label.toLowerCase()}.
+                        {verb} el rècord de {entry.label.toLowerCase()}.
                       </>
                     ) : (
                       <>
                         <span className="font-semibold text-white">
                           {entry.name}
                         </span>{" "}
-                        ha superat el rècord de {entry.label.toLowerCase()}.
+                        {verb} el rècord de {entry.label.toLowerCase()}.
                       </>
                     )}
                   </p>
@@ -125,7 +134,8 @@ export function RecordNotice() {
                 </span>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
