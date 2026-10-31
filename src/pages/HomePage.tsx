@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useData } from "@/context/DataContext";
-import { useDownloadedGameIds, useEntry } from "@/hooks/useCache";
+import {
+  useDownloadedGameIds,
+  useEntry,
+  useGameDetailGames,
+} from "@/hooks/useCache";
 import { KEY } from "@/lib/cache";
 import type {
   GameDay,
@@ -65,6 +69,9 @@ export default function HomePage() {
   const standingsState = useEntry<StandingsSnapshot>(KEY.standings);
   const todayState = useEntry<GameDay>(KEY.scoreboard(today));
   const downloadedGameIds = useDownloadedGameIds();
+  const cachedGameStates = useGameDetailGames(
+    (todayState.data?.games ?? []).map((game) => game.id),
+  );
   const pointsState = useEntry<LeaderSnapshot>(KEY.leaders("punts"));
   const reboundsState = useEntry<LeaderSnapshot>(KEY.leaders("rebots"));
   const assistsState = useEntry<LeaderSnapshot>(KEY.leaders("assistencies"));
@@ -72,7 +79,14 @@ export default function HomePage() {
   const [busyToday, setBusyToday] = useState(false);
 
   const standings = standingsState.data;
-  const todayGames = todayState.data;
+  const todayGames = todayState.data
+    ? {
+        ...todayState.data,
+        games: todayState.data.games.map(
+          (game) => cachedGameStates.get(game.id) ?? game,
+        ),
+      }
+    : null;
   const running = syncStatus === "running";
 
   if (standingsState.loading && !lastSyncAt) {

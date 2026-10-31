@@ -467,6 +467,56 @@ async function main() {
     "detalls de tots els partits del dia a IndexedDB",
     `${bulkGameKeys.length} detalls`,
   );
+
+  // Si el snapshot del dia es va desar abans del partit, el detall manat ha
+  // de prevaler: el calendari ha de mostrar el resultat i l'indicador verd.
+  const patchedSnapshot = await page.evaluate(async (day) => {
+    const key = `snapshot:scoreboard:${day}`;
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("nbastats");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction("cache", "readwrite");
+    const store = tx.objectStore("cache");
+    const entry = await new Promise((resolve, reject) => {
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (!entry) {
+      db.close();
+      return false;
+    }
+    entry.data.games = entry.data.games.map((game) => ({
+      ...game,
+      state: "pre",
+      statusLabel: "Programat",
+      home: { ...game.home, score: undefined, winner: undefined },
+      away: { ...game.away, score: undefined, winner: undefined },
+    }));
+    await new Promise((resolve, reject) => {
+      const request = store.put(entry, key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return true;
+  }, previousDay);
+  check(patchedSnapshot, "snapshot del dia modificat per a la prova");
+
+  await page.reload();
+  await page
+    .locator('[data-detail-status="ready"]')
+    .first()
+    .waitFor({ timeout: 15_000 });
+  const staleReady = await page.locator('[data-detail-status="ready"]').count();
+  check(
+    staleReady === pastCards && (await page.getByText("Programat").count()) === 0,
+    "el calendari mostra el resultat encara que el snapshot fos antic",
+    `${staleReady}/${pastCards} amb detall`,
+  );
+
   await page.screenshot({
     path: path.join(SHOTS, "06-games-bulk.png"),
     fullPage: true,

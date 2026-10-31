@@ -6,7 +6,7 @@ import {
   listKeys,
   readEntry,
 } from "@/lib/cache";
-import type { CacheEntry, CacheSummary, Game } from "@/lib/types";
+import type { CacheEntry, CacheSummary, Game, GameDetail } from "@/lib/types";
 
 type EntryState<T> = {
   key: string | null;
@@ -127,8 +127,62 @@ export function useCachedGame(gameId: string | null) {
 
 const GAME_KEY_PREFIX = "snapshot:game:";
 
-export function useDownloadedGameIds(): Set<string> {
-  const [ids, setIds] = useState<Set<string>>(new Set());
+/**
+ * Retorna l'últim `Game` desat a cada detall de partit. Serveix perquè el
+ * calendari mostri el resultat i l'estat reals encara que el snapshot del dia
+ * s'hagués desat abans que el partit comencés.
+ */
+export function useGameDetailGames(gameIds: string[]): Map<string, Game> {
+  const key = gameIds.join("|");
+  const [games, setGames] = useState<Map<string, Game>>(() => new Map());
+
+  useEffect(() => {
+    const ids = key ? key.split("|").filter(Boolean) : [];
+
+    if (ids.length === 0) {
+      setGames(new Map());
+      return;
+    }
+
+    let alive = true;
+    let timer: number | undefined;
+
+    const load = async () => {
+      const entries = await Promise.all(
+        ids.map((id) => readEntry<GameDetail>(`${GAME_KEY_PREFIX}${id}`)),
+      );
+      if (!alive) return;
+
+      const next = new Map<string, Game>();
+      for (const entry of entries) {
+        if (entry) next.set(entry.data.game.id, entry.data.game);
+      }
+      setGames(next);
+    };
+
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        load().catch(() => undefined);
+      }, 150);
+    };
+
+    load().catch(() => {
+      if (alive) setGames(new Map());
+    });
+    window.addEventListener(CACHE_EVENT, schedule);
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+      window.removeEventListener(CACHE_EVENT, schedule);
+    };
+  }, [key]);
+
+  return games;
+}
+
+export function useDownloadedGameIds(): Set<string> {  const [ids, setIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let alive = true;

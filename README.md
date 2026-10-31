@@ -110,7 +110,9 @@ permet veure les **mitjanes per partit** o els **totals acumulats** (els
 percentatges es calculen sempre amb els totals). La taula mostra totes les
 columnes sense desplaçament horitzontal en pantalles d'escriptori; a mòbil es
 mostra la columna de la categoria seleccionada. Els partits nous apareixen a la
-llista tan bon punt es descarreguen els seus detalls.
+llista tan bon punt es descarreguen els seus detalls. Si el snapshot del dia es
+va desar abans que el partit acabés, la llista mostra l'estat i el resultat del
+detall del partit que tinguis desat.
 
 La pantalla *Rècords* també es calcula localment amb els `snapshot:game:<id>`:
 mostra el **top 5** de punts, rebots, assistències, valoració, tirs de camp,

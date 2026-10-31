@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useData } from "@/context/DataContext";
-import { useDownloadedGameIds, useEntry } from "@/hooks/useCache";
+import {
+  useDownloadedGameIds,
+  useEntry,
+  useGameDetailGames,
+} from "@/hooks/useCache";
 import { KEY } from "@/lib/cache";
 import type { StandingsSnapshot, TeamDetail } from "@/lib/types";
 import {
@@ -32,6 +36,9 @@ export default function TeamPage() {
   );
   const standingsState = useEntry<StandingsSnapshot>(KEY.standings);
   const downloadedGameIds = useDownloadedGameIds();
+  const cachedGameStates = useGameDetailGames(
+    (detailState.data?.schedule ?? []).map((game) => game.id),
+  );
   const [busy, setBusy] = useState(false);
 
   const detail = detailState.data;
@@ -132,7 +139,11 @@ export default function TeamPage() {
     );
   }
 
-  const { played, next } = splitSchedule(detail.schedule, 5, 5);
+  const { played, next } = splitSchedule(
+    detail.schedule.map((game) => cachedGameStates.get(game.id) ?? game),
+    5,
+    5,
+  );
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:py-12">

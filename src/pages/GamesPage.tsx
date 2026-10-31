@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useData } from "@/context/DataContext";
-import { useDownloadedGameIds, useEntry } from "@/hooks/useCache";
+import { useDownloadedGameIds, useEntry, useGameDetailGames } from "@/hooks/useCache";
 import { KEY } from "@/lib/cache";
 import type { GameDay } from "@/lib/types";
 import {
@@ -43,7 +43,13 @@ export default function GamesPage() {
   const previous = shiftIsoDate(date, -1);
   const next = shiftIsoDate(date, 1);
   const isToday = date === today;
-  const detailGames = (data?.games ?? []).filter(canViewGameDetail);
+  const cachedGameStates = useGameDetailGames(
+    (data?.games ?? []).map((game) => game.id),
+  );
+  const games = (data?.games ?? []).map(
+    (game) => cachedGameStates.get(game.id) ?? game,
+  );
+  const detailGames = games.filter(canViewGameDetail);
 
   const handleDownload = async () => {
     setBusy(true);
@@ -141,7 +147,7 @@ export default function GamesPage() {
         </div>
       ) : data && data.games.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data.games.map((game) => (
+          {games.map((game) => (
             <GameCard
               key={game.id}
               game={game}
