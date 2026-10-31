@@ -440,6 +440,17 @@ async function main() {
       "l'avís de rècords mostra de qui i quin rècord s'ha superat",
       `${breakCount} rècords`,
     );
+    const previousCount = await page.locator("[data-record-previous]").count();
+    const previousNames = await page
+      .locator("[data-record-previous]")
+      .evaluateAll((nodes) =>
+        nodes.every((node) => (node.textContent ?? "").trim().length > 0),
+      );
+    check(
+      previousCount === breakCount && previousNames,
+      "l'avís de rècords diu de qui era el rècord anterior",
+      `${previousCount}/${breakCount} amb nom`,
+    );
     await page
       .getByRole("button", { name: /Tanca l'avís de rècords/i })
       .click();

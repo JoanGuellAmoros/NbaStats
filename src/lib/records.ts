@@ -81,6 +81,8 @@ export type RecordBreak = {
   team: Team;
   value: number;
   previous: number;
+  /** Noms dels qui tenien el rècord anterior (pot haver-hi empat). */
+  previousNames: string[];
   equalled: boolean;
   gameId: string;
   date: string;
@@ -403,9 +405,16 @@ export function findRecordBreaks(
         category.entries[0]?.value ?? null,
       ]),
     );
+    const previousLeaders = new Map(
+      previousCategories.map((category) => [
+        category.key,
+        category.entries.filter((entry) => entry.rank === 1),
+      ]),
+    );
 
     for (const category of nextCategories) {
       const previousBest = before.get(category.key) ?? null;
+      const previousHolders = previousLeaders.get(category.key) ?? [];
 
       for (const entry of category.entries) {
         if (entry.rank !== 1) continue;
@@ -427,6 +436,7 @@ export function findRecordBreaks(
           team: entry.team,
           value: entry.value,
           previous: previousBest,
+          previousNames: previousHolders.map((holder) => holder.name),
           equalled,
           gameId: entry.gameId,
           date: entry.date,

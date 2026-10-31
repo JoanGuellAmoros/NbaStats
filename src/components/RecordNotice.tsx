@@ -6,6 +6,12 @@ import { recordValue } from "@/lib/records";
 import { TeamLogo } from "./TeamLogo";
 import { BasketballIcon, XIcon } from "./icons";
 
+function joinNames(names: string[]): string {
+  if (names.length === 0) return "—";
+  if (names.length === 1) return names[0];
+  return `${names.slice(0, -1).join(", ")} i ${names[names.length - 1]}`;
+}
+
 export function RecordNotice() {
   const { recordBreaks, dismissRecordBreaks } = useData();
 
@@ -125,13 +131,24 @@ export function RecordNotice() {
                     )}
                   </p>
                   <p className="mt-0.5 text-[11px] text-zinc-500">
-                    Abans: {recordValue(entry, entry.previous)} ·{" "}
-                    {formatDateShort(entry.date)}
+                    Abans:{" "}
+                    <span
+                      className="text-zinc-400"
+                      data-record-previous={entry.previousNames.join("|")}
+                    >
+                      {joinNames(entry.previousNames)}
+                    </span>{" "}
+                    · {recordValue(entry, entry.previous)}
                   </p>
                 </div>
-                <span className="text-2xl font-semibold tabular-nums text-orange-300">
-                  {recordValue(entry, entry.value)}
-                </span>
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                  <span className="text-2xl font-semibold tabular-nums text-orange-300">
+                    {recordValue(entry, entry.value)}
+                  </span>
+                  <span className="text-[10px] text-zinc-600">
+                    {formatDateShort(entry.date)}
+                  </span>
+                </div>
               </Link>
             </li>
             );
