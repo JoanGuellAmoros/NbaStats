@@ -729,9 +729,51 @@ async function main() {
     );
   check(
     recordCategories.join(",") ===
-      "points,rebounds,assists,valuation,fieldGoalsMade,twoPointersMade,threePointersMade,freeThrowsMade,offensiveRebounds,defensiveRebounds,steals,blocks,turnovers,plusMinus,minutes",
-    "15 categories de rècords individuals",
+      "points,rebounds,assists,valuation,fieldGoalsMade,fieldGoalsMissed,twoPointersMade,twoPointersMissed,threePointersMade,threePointersMissed,freeThrowsMade,freeThrowsMissed,offensiveRebounds,defensiveRebounds,steals,blocks,turnovers,plusMinus,minutes",
+    "19 categories de rècords individuals",
     recordCategories.join(","),
+  );
+  const missedCategoryLabels = await page
+    .locator(
+      '[data-record-category="fieldGoalsMissed"] h3, [data-record-category="twoPointersMissed"] h3, [data-record-category="threePointersMissed"] h3, [data-record-category="freeThrowsMissed"] h3',
+    )
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim()));
+  const madeCategoryLabels = await page
+    .locator(
+      '[data-record-category="fieldGoalsMade"] h3, [data-record-category="twoPointersMade"] h3, [data-record-category="threePointersMade"] h3, [data-record-category="freeThrowsMade"] h3',
+    )
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim()));
+  check(
+    missedCategoryLabels.length === 4 &&
+      missedCategoryLabels.every((label) => label?.includes("fallats")) &&
+      madeCategoryLabels.length === 4 &&
+      madeCategoryLabels.every((label) => label?.includes("anotats")),
+    "els rècords distingeixen entre tirs anotats i fallats",
+    `${madeCategoryLabels.length} anotats · ${missedCategoryLabels.length} fallats`,
+  );
+
+  const firstRecordCategory = page
+    .locator('[data-record-scope="player"]')
+    .first();
+  const firstRecordLabel = (
+    await firstRecordCategory.locator("h3").textContent()
+  )?.trim();
+  await firstRecordCategory
+    .getByRole("button", { name: `Plega ${firstRecordLabel}` })
+    .click();
+  const collapsedCards = await firstRecordCategory
+    .locator("[data-record-rank]")
+    .count();
+  await firstRecordCategory
+    .getByRole("button", { name: `Desplega ${firstRecordLabel}` })
+    .click();
+  const expandedCards = await firstRecordCategory
+    .locator("[data-record-rank]")
+    .count();
+  check(
+    collapsedCards === 0 && expandedCards > 0,
+    "les seccions de rècords es pleguen i es despleguen",
+    `${collapsedCards} plegada · ${expandedCards} desplegada`,
   );
   const teamRecordCategories = await page
     .locator('[data-record-scope="team"]')

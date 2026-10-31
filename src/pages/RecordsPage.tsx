@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type {
   RankedRecordEntry,
@@ -11,7 +12,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Badge } from "@/components/ui";
-import { BasketballIcon } from "@/components/icons";
+import { BasketballIcon, ChevronDownIcon } from "@/components/icons";
 
 type AnyCategory = RecordCategory | TeamRecordCategory;
 
@@ -140,34 +141,57 @@ function CategorySection({
   scope: "player" | "team";
 }) {
   const leaders = category.entries.filter((entry) => entry.rank === 1).length;
+  const [open, setOpen] = useState(true);
+  const panelId = `record-panel-${scope}-${category.key}`;
 
   return (
     <section
       data-record-category={category.key}
       data-record-scope={scope}
+      data-record-open={open ? "true" : "false"}
       className="scroll-mt-24"
     >
       <div className="mb-3 flex items-end justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-lg font-semibold text-white">{category.label}</h3>
           <Badge tone="neutral">Top 5</Badge>
           {leaders > 1 ? <Badge tone="orange">Empat</Badge> : null}
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+            {category.short}
+          </span>
         </div>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
-          {category.short}
-        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((previous) => !previous)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={`${open ? "Plega" : "Desplega"} ${category.label}`}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+        >
+          {open ? "Plega" : "Desplega"}
+          <ChevronDownIcon
+            className={`size-4 transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {category.entries.map((entry) => (
-          <RecordCard
-            key={`${entry.gameId}:${entry.id}`}
-            category={category}
-            entry={entry}
-            featured={entry.rank === 1 && leaders <= 2}
-          />
-        ))}
-      </div>
+      {open ? (
+        <div
+          id={panelId}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          {category.entries.map((entry) => (
+            <RecordCard
+              key={`${entry.gameId}:${entry.id}`}
+              category={category}
+              entry={entry}
+              featured={entry.rank === 1 && leaders <= 2}
+            />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

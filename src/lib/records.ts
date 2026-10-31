@@ -8,9 +8,13 @@ export type RecordMetricKey =
   | "assists"
   | "valuation"
   | "fieldGoalsMade"
+  | "fieldGoalsMissed"
   | "twoPointersMade"
+  | "twoPointersMissed"
   | "threePointersMade"
+  | "threePointersMissed"
   | "freeThrowsMade"
+  | "freeThrowsMissed"
   | "offensiveRebounds"
   | "defensiveRebounds"
   | "steals"
@@ -100,10 +104,54 @@ export const RECORD_METRICS: RecordMetric<RecordMetricKey>[] = [
   { key: "rebounds", label: "Rebots", short: "REB", format: "integer" },
   { key: "assists", label: "Assistències", short: "AST", format: "integer" },
   { key: "valuation", label: "Valoració", short: "VAL", format: "integer" },
-  { key: "fieldGoalsMade", label: "Tirs de camp", short: "TC", format: "integer" },
-  { key: "twoPointersMade", label: "Tirs de 2", short: "2P", format: "integer" },
-  { key: "threePointersMade", label: "Triples", short: "3P", format: "integer" },
-  { key: "freeThrowsMade", label: "Tirs lliures", short: "TL", format: "integer" },
+  {
+    key: "fieldGoalsMade",
+    label: "Tirs de camp anotats",
+    short: "TCA",
+    format: "integer",
+  },
+  {
+    key: "fieldGoalsMissed",
+    label: "Tirs de camp fallats",
+    short: "TCF",
+    format: "integer",
+  },
+  {
+    key: "twoPointersMade",
+    label: "Tirs de 2 anotats",
+    short: "2PA",
+    format: "integer",
+  },
+  {
+    key: "twoPointersMissed",
+    label: "Tirs de 2 fallats",
+    short: "2PF",
+    format: "integer",
+  },
+  {
+    key: "threePointersMade",
+    label: "Triples anotats",
+    short: "3PA",
+    format: "integer",
+  },
+  {
+    key: "threePointersMissed",
+    label: "Triples fallats",
+    short: "3PF",
+    format: "integer",
+  },
+  {
+    key: "freeThrowsMade",
+    label: "Tirs lliures anotats",
+    short: "TLA",
+    format: "integer",
+  },
+  {
+    key: "freeThrowsMissed",
+    label: "Tirs lliures fallats",
+    short: "TLF",
+    format: "integer",
+  },
   {
     key: "offensiveRebounds",
     label: "Rebots ofensius",
@@ -180,9 +228,11 @@ function playedMinutes(value?: string): number {
 }
 
 function playerLine(stats: Record<string, string>): PlayerLine {
-  const [fgm] = shooting(stats[FG_KEY]);
-  const [tpm] = shooting(stats[THREE_KEY]);
-  const [ftm] = shooting(stats[FT_KEY]);
+  const [fgm, fga] = shooting(stats[FG_KEY]);
+  const [tpm, tpa] = shooting(stats[THREE_KEY]);
+  const [ftm, fta] = shooting(stats[FT_KEY]);
+  const twoMade = fgm - tpm;
+  const twoAttempted = fga - tpa;
 
   return {
     points: number(stats.points),
@@ -190,9 +240,13 @@ function playerLine(stats: Record<string, string>): PlayerLine {
     assists: number(stats.assists),
     valuation: valuation(stats),
     fieldGoalsMade: fgm,
-    twoPointersMade: fgm - tpm,
+    fieldGoalsMissed: Math.max(0, fga - fgm),
+    twoPointersMade: twoMade,
+    twoPointersMissed: Math.max(0, twoAttempted - twoMade),
     threePointersMade: tpm,
+    threePointersMissed: Math.max(0, tpa - tpm),
     freeThrowsMade: ftm,
+    freeThrowsMissed: Math.max(0, fta - ftm),
     offensiveRebounds: number(stats.offensiveRebounds),
     defensiveRebounds: number(stats.defensiveRebounds),
     steals: number(stats.steals),

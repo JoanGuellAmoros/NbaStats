@@ -51,6 +51,14 @@ export function ChevronRightIcon({ className }: IconProps) {
   );
 }
 
+export function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <Base className={className}>
+      <path d="m6 9 6 6 6-6" />
+    </Base>
+  );
+}
+
 export function ArrowRightIcon({ className }: IconProps) {
   return (
     <Base className={className}>
