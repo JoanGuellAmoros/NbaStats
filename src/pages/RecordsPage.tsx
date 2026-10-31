@@ -140,9 +140,18 @@ function CategorySection({
   category: AnyCategory;
   scope: "player" | "team";
 }) {
-  const leaders = category.entries.filter((entry) => entry.rank === 1).length;
-  const [open, setOpen] = useState(true);
+  const leaders = category.entries.filter((entry) => entry.rank === 1);
+  const leader = leaders[0];
+  const [open, setOpen] = useState(false);
   const panelId = `record-panel-${scope}-${category.key}`;
+  const leaderSummary =
+    leaders.length > 1
+      ? `${recordValue(category, leader?.value ?? 0)} ${category.short} · Empat (${leaders.length} ${
+          scope === "team" ? "equips" : "jugadors"
+        })`
+      : leader
+        ? `${recordValue(category, leader.value)} ${category.short} · ${leader.name}`
+        : "";
 
   return (
     <section
@@ -152,13 +161,33 @@ function CategorySection({
       className="scroll-mt-24"
     >
       <div className="mb-3 flex items-end justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <h3 className="text-lg font-semibold text-white">{category.label}</h3>
           <Badge tone="neutral">Top 5</Badge>
-          {leaders > 1 ? <Badge tone="orange">Empat</Badge> : null}
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
-            {category.short}
-          </span>
+          {open && leaders.length > 1 ? (
+            <Badge tone="orange">Empat</Badge>
+          ) : null}
+          {open ? (
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+              {category.short}
+            </span>
+          ) : (
+            <span
+              data-record-summary={category.key}
+              title={leaderSummary}
+              className="min-w-0 text-[11px] font-medium text-zinc-400"
+            >
+              <span className="font-semibold text-orange-300">
+                {recordValue(category, leader?.value ?? 0)} {category.short}
+              </span>
+              {" · "}
+              {leaders.length > 1
+                ? `Empat (${leaders.length} ${
+                    scope === "team" ? "equips" : "jugadors"
+                  })`
+                : leader?.name}
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -187,7 +216,7 @@ function CategorySection({
               key={`${entry.gameId}:${entry.id}`}
               category={category}
               entry={entry}
-              featured={entry.rank === 1 && leaders <= 2}
+              featured={entry.rank === 1 && leaders.length <= 2}
             />
           ))}
         </div>

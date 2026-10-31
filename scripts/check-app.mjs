@@ -765,22 +765,31 @@ async function main() {
   const firstRecordLabel = (
     await firstRecordCategory.locator("h3").textContent()
   )?.trim();
-  await firstRecordCategory
-    .getByRole("button", { name: `Plega ${firstRecordLabel}` })
-    .click();
-  const collapsedCards = await firstRecordCategory
-    .locator("[data-record-rank]")
+  const collapsedByDefault = await page
+    .locator('[data-record-open="false"]')
     .count();
+  const firstSummary = (
+    await firstRecordCategory.locator("[data-record-summary]").textContent()
+  )?.trim();
   await firstRecordCategory
     .getByRole("button", { name: `Desplega ${firstRecordLabel}` })
     .click();
   const expandedCards = await firstRecordCategory
     .locator("[data-record-rank]")
     .count();
+  await firstRecordCategory
+    .getByRole("button", { name: `Plega ${firstRecordLabel}` })
+    .click();
+  const collapsedCards = await firstRecordCategory
+    .locator("[data-record-rank]")
+    .count();
   check(
-    collapsedCards === 0 && expandedCards > 0,
-    "les seccions de rècords es pleguen i es despleguen",
-    `${collapsedCards} plegada · ${expandedCards} desplegada`,
+    collapsedByDefault === recordCategories.length + 6 &&
+      Boolean(firstSummary) &&
+      expandedCards > 0 &&
+      collapsedCards === 0,
+    "els rècords surten plegats per defecte i es poden desplegar i plegar",
+    `${collapsedByDefault} plegats · ${expandedCards} targetes en desplegar`,
   );
   const teamRecordCategories = await page
     .locator('[data-record-scope="team"]')
@@ -793,6 +802,24 @@ async function main() {
     "6 categories de rècords d'equip",
     teamRecordCategories.join(","),
   );
+  const summaries = await page
+    .locator("[data-record-summary]")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.textContent?.trim() ?? ""),
+    );
+  check(
+    summaries.length === recordCategories.length + teamRecordCategories.length &&
+      summaries.every((text) => /^[+−]?[\d.,]+ \S+ · .+/.test(text)),
+    "els rècords plegats mostren el valor i qui el té",
+    `${summaries.length} resums`,
+  );
+
+  // Desplega totes les seccions per comprovar les targetes.
+  const expandAll = page.getByRole("button", { name: /^Desplega / });
+  while ((await expandAll.count()) > 0) {
+    await expandAll.first().click();
+  }
+
   const recordCards = await page
     .locator('[data-record-scope="player"] [data-record-rank]')
     .count();
