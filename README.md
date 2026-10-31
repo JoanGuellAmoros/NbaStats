@@ -116,8 +116,8 @@ detall del partit que tinguis desat.
 
 La pantalla *Rècords* també es calcula localment amb els `snapshot:game:<id>`:
 mostra el **top 5** de punts, rebots, assistències, valoració i tirs (de camp,
-de 2, triples i tirs lliures), distingint explícitament entre **anotats i
-fallats**, a més de rebots ofensius i defensius, robatoris, taps, pèrdues,
+de 2, triples i tirs lliures), distingint explícitament entre **anotats, fallats
+i intentats**, a més de rebots ofensius i defensius, robatoris, taps, pèrdues,
 plus/minus i minuts dels jugadors, i també rècords d'equip (punts, marge de
 victòria, rebots, assistències, robatoris i taps). Cada estadística és una
 secció de targetes que es pot **plegar i desplegar** amb el botó de la dreta.

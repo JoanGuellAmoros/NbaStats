@@ -729,8 +729,8 @@ async function main() {
     );
   check(
     recordCategories.join(",") ===
-      "points,rebounds,assists,valuation,fieldGoalsMade,fieldGoalsMissed,twoPointersMade,twoPointersMissed,threePointersMade,threePointersMissed,freeThrowsMade,freeThrowsMissed,offensiveRebounds,defensiveRebounds,steals,blocks,turnovers,plusMinus,minutes",
-    "19 categories de rècords individuals",
+      "points,rebounds,assists,valuation,fieldGoalsMade,fieldGoalsMissed,fieldGoalsAttempted,twoPointersMade,twoPointersMissed,twoPointersAttempted,threePointersMade,threePointersMissed,threePointersAttempted,freeThrowsMade,freeThrowsMissed,freeThrowsAttempted,offensiveRebounds,defensiveRebounds,steals,blocks,turnovers,plusMinus,minutes",
+    "23 categories de rècords individuals",
     recordCategories.join(","),
   );
   const missedCategoryLabels = await page
@@ -743,13 +743,20 @@ async function main() {
       '[data-record-category="fieldGoalsMade"] h3, [data-record-category="twoPointersMade"] h3, [data-record-category="threePointersMade"] h3, [data-record-category="freeThrowsMade"] h3',
     )
     .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim()));
+  const attemptedCategoryLabels = await page
+    .locator(
+      '[data-record-category="fieldGoalsAttempted"] h3, [data-record-category="twoPointersAttempted"] h3, [data-record-category="threePointersAttempted"] h3, [data-record-category="freeThrowsAttempted"] h3',
+    )
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim()));
   check(
     missedCategoryLabels.length === 4 &&
       missedCategoryLabels.every((label) => label?.includes("fallats")) &&
       madeCategoryLabels.length === 4 &&
-      madeCategoryLabels.every((label) => label?.includes("anotats")),
-    "els rècords distingeixen entre tirs anotats i fallats",
-    `${madeCategoryLabels.length} anotats · ${missedCategoryLabels.length} fallats`,
+      madeCategoryLabels.every((label) => label?.includes("anotats")) &&
+      attemptedCategoryLabels.length === 4 &&
+      attemptedCategoryLabels.every((label) => label?.includes("intentats")),
+    "els rècords distingeixen entre tirs anotats, fallats i intentats",
+    `${madeCategoryLabels.length} anotats · ${missedCategoryLabels.length} fallats · ${attemptedCategoryLabels.length} intentats`,
   );
 
   const firstRecordCategory = page

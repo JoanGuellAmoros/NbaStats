@@ -9,12 +9,16 @@ export type RecordMetricKey =
   | "valuation"
   | "fieldGoalsMade"
   | "fieldGoalsMissed"
+  | "fieldGoalsAttempted"
   | "twoPointersMade"
   | "twoPointersMissed"
+  | "twoPointersAttempted"
   | "threePointersMade"
   | "threePointersMissed"
+  | "threePointersAttempted"
   | "freeThrowsMade"
   | "freeThrowsMissed"
+  | "freeThrowsAttempted"
   | "offensiveRebounds"
   | "defensiveRebounds"
   | "steals"
@@ -117,6 +121,12 @@ export const RECORD_METRICS: RecordMetric<RecordMetricKey>[] = [
     format: "integer",
   },
   {
+    key: "fieldGoalsAttempted",
+    label: "Tirs de camp intentats",
+    short: "TCI",
+    format: "integer",
+  },
+  {
     key: "twoPointersMade",
     label: "Tirs de 2 anotats",
     short: "2PA",
@@ -126,6 +136,12 @@ export const RECORD_METRICS: RecordMetric<RecordMetricKey>[] = [
     key: "twoPointersMissed",
     label: "Tirs de 2 fallats",
     short: "2PF",
+    format: "integer",
+  },
+  {
+    key: "twoPointersAttempted",
+    label: "Tirs de 2 intentats",
+    short: "2PI",
     format: "integer",
   },
   {
@@ -141,6 +157,12 @@ export const RECORD_METRICS: RecordMetric<RecordMetricKey>[] = [
     format: "integer",
   },
   {
+    key: "threePointersAttempted",
+    label: "Triples intentats",
+    short: "3PI",
+    format: "integer",
+  },
+  {
     key: "freeThrowsMade",
     label: "Tirs lliures anotats",
     short: "TLA",
@@ -150,6 +172,12 @@ export const RECORD_METRICS: RecordMetric<RecordMetricKey>[] = [
     key: "freeThrowsMissed",
     label: "Tirs lliures fallats",
     short: "TLF",
+    format: "integer",
+  },
+  {
+    key: "freeThrowsAttempted",
+    label: "Tirs lliures intentats",
+    short: "TLI",
     format: "integer",
   },
   {
@@ -241,12 +269,16 @@ function playerLine(stats: Record<string, string>): PlayerLine {
     valuation: valuation(stats),
     fieldGoalsMade: fgm,
     fieldGoalsMissed: Math.max(0, fga - fgm),
+    fieldGoalsAttempted: fga,
     twoPointersMade: twoMade,
     twoPointersMissed: Math.max(0, twoAttempted - twoMade),
+    twoPointersAttempted: twoAttempted,
     threePointersMade: tpm,
     threePointersMissed: Math.max(0, tpa - tpm),
+    threePointersAttempted: tpa,
     freeThrowsMade: ftm,
     freeThrowsMissed: Math.max(0, fta - ftm),
+    freeThrowsAttempted: fta,
     offensiveRebounds: number(stats.offensiveRebounds),
     defensiveRebounds: number(stats.defensiveRebounds),
     steals: number(stats.steals),
