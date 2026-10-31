@@ -772,7 +772,7 @@ async function main() {
     await firstRecordCategory.locator("[data-record-summary]").textContent()
   )?.trim();
   await firstRecordCategory
-    .getByRole("button", { name: `Desplega ${firstRecordLabel}` })
+    .getByRole("button", { name: firstRecordLabel, exact: true })
     .click();
   const expandedCards = await firstRecordCategory
     .locator("[data-record-rank]")
@@ -788,8 +788,12 @@ async function main() {
       Boolean(firstSummary) &&
       expandedCards > 0 &&
       collapsedCards === 0,
-    "els rècords surten plegats per defecte i es poden desplegar i plegar",
+    "es desplega clicant el nom i es plega amb el botó, plegat per defecte",
     `${collapsedByDefault} plegats · ${expandedCards} targetes en desplegar`,
+  );
+  check(
+    (await page.getByText("Top 5", { exact: true }).count()) === 0,
+    "sense badges de Top 5 a les seccions",
   );
   const teamRecordCategories = await page
     .locator('[data-record-scope="team"]')

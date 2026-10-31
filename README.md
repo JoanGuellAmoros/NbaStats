@@ -122,7 +122,8 @@ plus/minus i minuts dels jugadors, i també rècords d'equip (punts, marge de
 victòria, rebots, assistències, robatoris i taps). Cada estadística és una
 secció de targetes que surt **plegada per defecte**: al costat del títol es veu
 el valor del rècord i qui el té (o «X Empat (N jugadors/equips)» si hi ha
-empat). Amb el botó de la dreta es pot desplegar i tornar a plegar.
+empat). Es desplega clicant el nom de l'estadística o el botó de la dreta, i es
+torna a plegar de la mateixa manera.
 Cada secció mostra el **millor registre destacat** i, a cada targeta, el
 jugador o equip, el partit (equip, rival, resultat i data) i el valor. Si hi ha empat, es mostren **totes** les entrades amb el mateix registre
 i el rang s'indica amb `=`. En clicar una targeta s'obre el detall del partit. Quan descarregues els detalls

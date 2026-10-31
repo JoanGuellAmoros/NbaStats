@@ -162,8 +162,17 @@ function CategorySection({
     >
       <div className="mb-3 flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="text-lg font-semibold text-white">{category.label}</h3>
-          <Badge tone="neutral">Top 5</Badge>
+          <h3 className="text-lg font-semibold text-white">
+            <button
+              type="button"
+              onClick={() => setOpen((previous) => !previous)}
+              aria-expanded={open}
+              aria-controls={panelId}
+              className="text-left transition-colors hover:text-orange-300"
+            >
+              {category.label}
+            </button>
+          </h3>
           {open && leaders.length > 1 ? (
             <Badge tone="orange">Empat</Badge>
           ) : null}
