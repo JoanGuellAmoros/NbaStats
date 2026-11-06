@@ -47,10 +47,16 @@ export function GameCard({
   game: Game;
   hasDetail?: boolean;
 }) {
-  const isPre = game.state === "pre";
   const linkable = canViewGameDetail(game);
-  const showDetailStatus =
-    game.state === "post" && hasDetail !== undefined;
+  // Un partit d'un dia passat no pot continuar "programat": si encara no en
+  // tenim el detall, el mostrem com a jugat i esperem que es descarregui.
+  const playedWithoutDetail =
+    game.state === "pre" && linkable && hasDetail !== true;
+  const state = playedWithoutDetail ? "post" : game.state;
+  const statusLabel = playedWithoutDetail ? "Jugat" : game.statusLabel;
+  const isPre = state === "pre";
+  const showDetailStatus = state === "post" && hasDetail !== undefined;
+  const showScore = !isPre && !playedWithoutDetail;
 
   const content = (
     <article
@@ -65,14 +71,21 @@ export function GameCard({
           <span
             className={cn(
               "font-semibold",
-              game.state === "in"
-                ? "text-orange-400"
-                : game.state === "post"
-                  ? "text-zinc-400"
-                  : "text-emerald-400",
+              playedWithoutDetail
+                ? "text-amber-300"
+                : state === "in"
+                  ? "text-orange-400"
+                  : state === "post"
+                    ? "text-zinc-400"
+                    : "text-emerald-400",
             )}
+            title={
+              playedWithoutDetail
+                ? "Partit jugat: descarrega els detalls per veure el resultat"
+                : undefined
+            }
           >
-            {game.statusLabel}
+            {statusLabel}
           </span>
           {showDetailStatus && (
             <span
@@ -103,8 +116,8 @@ export function GameCard({
       </div>
 
       <div className="space-y-1">
-        <Side side={game.away} showScore={!isPre} />
-        <Side side={game.home} showScore={!isPre} />
+        <Side side={game.away} showScore={showScore} />
+        <Side side={game.home} showScore={showScore} />
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/5 px-1 pt-2">

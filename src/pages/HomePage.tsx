@@ -6,11 +6,11 @@ import {
   useEntry,
   useGameDetailGames,
 } from "@/hooks/useCache";
+import { useStandings } from "@/hooks/useStandings";
 import { KEY } from "@/lib/cache";
 import type {
   GameDay,
   LeaderSnapshot,
-  StandingsSnapshot,
 } from "@/lib/types";
 import {
   formatDateLong,
@@ -66,7 +66,7 @@ export default function HomePage() {
   } = useData();
 
   const today = todayIso();
-  const standingsState = useEntry<StandingsSnapshot>(KEY.standings);
+  const standingsState = useStandings();
   const todayState = useEntry<GameDay>(KEY.scoreboard(today));
   const downloadedGameIds = useDownloadedGameIds();
   const cachedGameStates = useGameDetailGames(

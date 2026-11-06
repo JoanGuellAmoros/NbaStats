@@ -1,6 +1,4 @@
-import { useEntry } from "@/hooks/useCache";
-import { KEY } from "@/lib/cache";
-import type { StandingsSnapshot } from "@/lib/types";
+import { useStandings } from "@/hooks/useStandings";
 import { timeAgo } from "@/lib/format";
 import { DataMissing } from "@/components/DataMissing";
 import { PageHeader } from "@/components/PageHeader";
@@ -8,9 +6,7 @@ import { StandingsTable } from "@/components/StandingsTable";
 import { Badge } from "@/components/ui";
 
 export default function StandingsPage() {
-  const { data, loading, fetchedAt } = useEntry<StandingsSnapshot>(
-    KEY.standings,
-  );
+  const { data, loading, fetchedAt, appliedGames } = useStandings();
 
   if (loading) {
     return (
@@ -38,14 +34,27 @@ export default function StandingsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
+    <div
+      className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:py-12"
+      data-standings-applied={appliedGames}
+    >
       <PageHeader
         eyebrow={`Temporada ${data.season}`}
         title="Classificació"
-        description="Rècord, diferència de punts i ratxa de tots els equips, ordenats per conferència."
+        description="Rècord, diferència de punts i ratxa de tots els equips, ordenats per conferència. S'hi afegeixen els resultats dels partits descarregats que la classificació d'ESPN encara no incloïa."
         action={
           fetchedAt ? (
-            <Badge tone="neutral">Desada {timeAgo(fetchedAt)}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="neutral">Desada {timeAgo(fetchedAt)}</Badge>
+              {appliedGames > 0 ? (
+                <Badge tone="orange">
+                  {appliedGames}{" "}
+                  {appliedGames === 1
+                    ? "partit descarregat"
+                    : "partits descarregats"}
+                </Badge>
+              ) : null}
+            </div>
           ) : undefined
         }
       />

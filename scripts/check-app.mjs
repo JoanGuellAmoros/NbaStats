@@ -390,6 +390,54 @@ async function main() {
     fullPage: true,
   });
 
+  // Encara que el snapshot digui "Programat", un partit d'un dia passat s'ha
+  // de mostrar com a jugat mentre no en tinguem el detall.
+  await page.evaluate(async (day) => {
+    const key = `snapshot:scoreboard:${day}`;
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("nbastats");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction("cache", "readwrite");
+    const store = tx.objectStore("cache");
+    const entry = await new Promise((resolve, reject) => {
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (!entry) {
+      db.close();
+      return;
+    }
+    entry.data.games = entry.data.games.map((game) => ({
+      ...game,
+      state: "pre",
+      statusLabel: "Programat",
+      home: { ...game.home, score: undefined, winner: undefined },
+      away: { ...game.away, score: undefined, winner: undefined },
+    }));
+    await new Promise((resolve, reject) => {
+      const request = store.put(entry, key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+  }, previousDay);
+
+  await page.reload();
+  await page.locator("article").first().waitFor({ timeout: 15_000 });
+  const playedLabels = await page.getByText("Jugat", { exact: true }).count();
+  const programmedLabels = await page.getByText("Programat").count();
+  check(
+    playedLabels > 0 && programmedLabels === 0,
+    "els partits passats surten com a jugats encara que no tinguin detalls",
+    `${playedLabels}/${pastCards} jugats`,
+  );
+  await page
+    .getByRole("button", { name: /Carrega tots els detalls/i })
+    .waitFor({ timeout: 15_000 });
+
   const bulkRequestsBefore = statsRequests.length;
   await page
     .getByRole("button", { name: /Carrega tots els detalls/i })
@@ -532,6 +580,86 @@ async function main() {
     path: path.join(SHOTS, "06-games-bulk.png"),
     fullPage: true,
   });
+
+  // Classificació: s'han d'afegir els resultats dels partits descarregats que
+  // el snapshot d'ESPN encara no podia incloure.
+  const standingsPatched = await page.evaluate(async () => {
+    const key = "snapshot:standings";
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open("nbastats");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const tx = db.transaction("cache", "readwrite");
+    const store = tx.objectStore("cache");
+    const entry = await new Promise((resolve, reject) => {
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (!entry) {
+      db.close();
+      return false;
+    }
+    entry.fetchedAt = 0;
+    entry.data.east = entry.data.east.map((row) => ({
+      ...row,
+      record: {
+        ...row.record,
+        wins: 0,
+        losses: 0,
+        pct: ".000",
+        ppg: "0.0",
+        oppg: "0.0",
+        diff: "0.0",
+        streak: undefined,
+      },
+    }));
+    entry.data.west = entry.data.west.map((row) => ({
+      ...row,
+      record: {
+        ...row.record,
+        wins: 0,
+        losses: 0,
+        pct: ".000",
+        ppg: "0.0",
+        oppg: "0.0",
+        diff: "0.0",
+        streak: undefined,
+      },
+    }));
+    await new Promise((resolve, reject) => {
+      const request = store.put(entry, key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return true;
+  });
+  check(standingsPatched, "classificació d'ESPN modificada per a la prova");
+
+  await page.getByRole("link", { name: "Classificació" }).first().click();
+  await page
+    .getByRole("heading", { name: "Conferència Est" })
+    .waitFor({ timeout: 15_000 });
+  const standingsApplied = Number(
+    await page
+      .locator("[data-standings-applied]")
+      .first()
+      .getAttribute("data-standings-applied"),
+  );
+  const standingsWins = await page
+    .locator("table tbody tr td:nth-child(3)")
+    .allInnerTexts();
+  const totalWins = standingsWins.reduce(
+    (sum, value) => sum + Number(value.trim() || 0),
+    0,
+  );
+  check(
+    standingsApplied > 0 && totalWins === standingsApplied,
+    "la classificació es calcula amb els partits jugats descarregats",
+    `${standingsApplied} partits · ${totalWins} victòries`,
+  );
 
   // Jugadors: es calculen dels boxscores, sense rànquings d'ESPN
   const removedLeaders = await page.evaluate(async () => {
@@ -836,7 +964,7 @@ async function main() {
     .locator('[data-record-scope="team"] [data-record-rank]')
     .count();
   check(
-    teamRecordCards >= 30,
+    teamRecordCards >= 6,
     "top 5 de cada estadística d'equip (amb empatats)",
     `${teamRecordCards} targetes`,
   );

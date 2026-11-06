@@ -182,7 +182,8 @@ export function useGameDetailGames(gameIds: string[]): Map<string, Game> {
   return games;
 }
 
-export function useDownloadedGameIds(): Set<string> {  const [ids, setIds] = useState<Set<string>>(new Set());
+export function useDownloadedGameIds(): Set<string> {
+  const [ids, setIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let alive = true;

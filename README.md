@@ -101,6 +101,18 @@ enllacen a la pàgina de detall; si s'hi entra directament per l'adreça, es mos
 un avís i no s'ofereix cap descàrrega. El dia del calendari es calcula amb la
 data NBA (zona horària `America/New_York`) del partit.
 
+Si un partit d'un dia passat encara consta com a *Programat* al snapshot i no en
+tens el detall, el calendari el mostra com a **Jugat** (en ambre) en lloc de
+programat. Quan descarreguis el detall, passa a mostrar el resultat i l'estat
+reals.
+
+La pantalla *Classificació* parteix del rècord d'ESPN i hi afegeix els resultats
+dels `snapshot:game:<id>` descarregats que, segons l'hora de desada del snapshot,
+encara no hi podien ser inclosos. Així els partits jugats que descarregues es
+reflecteixen a V/D, V%, PPP, OPP, DIF, ratxa i ordre de la conferència sense
+comptar-los dues vegades. El mateix càlcul alimenta la portada, la llista
+d'equips i la fitxa d'equip.
+
 La pantalla *Jugadors* no fa cap descàrrega: agrega els boxscores de tots els
 `snapshot:game:<id>` desats i en calcula partits jugats, minuts, punts, rebots
 (totals, ofensius i defensius), assistències, robatoris, taps, tirs de 2,

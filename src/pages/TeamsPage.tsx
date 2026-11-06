@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { useEntry } from "@/hooks/useCache";
-import { KEY } from "@/lib/cache";
-import type { Standing, StandingsSnapshot } from "@/lib/types";
+import { useStandings } from "@/hooks/useStandings";
+import type { Standing } from "@/lib/types";
 import { streakLabel, timeAgo, winPct } from "@/lib/format";
 import { DataMissing } from "@/components/DataMissing";
 import { PageHeader } from "@/components/PageHeader";
@@ -41,9 +40,7 @@ function TeamCard({ row }: { row: Standing }) {
 }
 
 export default function TeamsPage() {
-  const { data, loading, fetchedAt } = useEntry<StandingsSnapshot>(
-    KEY.standings,
-  );
+  const { data, loading, fetchedAt } = useStandings();
 
   if (loading) {
     return (

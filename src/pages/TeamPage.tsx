@@ -6,8 +6,9 @@ import {
   useEntry,
   useGameDetailGames,
 } from "@/hooks/useCache";
+import { useStandings } from "@/hooks/useStandings";
 import { KEY } from "@/lib/cache";
-import type { StandingsSnapshot, TeamDetail } from "@/lib/types";
+import type { TeamDetail } from "@/lib/types";
 import {
   experienceLabel,
   heightLabel,
@@ -34,7 +35,7 @@ export default function TeamPage() {
   const detailState = useEntry<TeamDetail>(
     teamId ? KEY.team(teamId) : null,
   );
-  const standingsState = useEntry<StandingsSnapshot>(KEY.standings);
+  const standingsState = useStandings();
   const downloadedGameIds = useDownloadedGameIds();
   const cachedGameStates = useGameDetailGames(
     (detailState.data?.schedule ?? []).map((game) => game.id),
